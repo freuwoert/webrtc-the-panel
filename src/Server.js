@@ -6,11 +6,9 @@ const Room = require('./Room.js')
 const User = require('./User.js')
 
 module.exports = class Server {
-    overlayDict = new Map
-    roomDict = new Map
-    
-    
     constructor(port) {
+        this.overlayDict = new Map
+        this.roomDict = new Map
         this.port = port
         this.overlayDict.set('test_overlay_id_1', null)
         this.overlayDict.set('test_overlay_id_2', null)
