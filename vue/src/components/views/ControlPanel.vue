@@ -7,7 +7,7 @@
                     <span v-if="user.id === socket.id">(you)</span>
                 </span>
 
-                <video v-if="user.id !== socket.id" autoplay muted class="video" :id="'video_'+user.id"></video>
+                <video v-if="user.id !== socket.id" autoplay class="video" :id="'video_'+user.id"></video>
                 <video v-else autoplay muted class="video" id="local-video"></video>
             </div>
         </div>
