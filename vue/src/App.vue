@@ -7,7 +7,7 @@
 </template>
 
 <script>
-    const { RTCPeerConnection, RTCSessionDescription } = window
+    const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } = window
     import SplashCreateRoom from './components/views/SplashCreateRoom.vue'
     import SplashJoinRoom from './components/views/SplashJoinRoom.vue'
     import ControlPanel from './components/views/ControlPanel.vue'
@@ -113,6 +113,21 @@
                 
                 console.log('Answer sent!')
             })
+
+
+
+            this.socket.on('peer.add.candidate', async data => {
+                let peer = this.getPeerOrNull(data.from)
+
+                if (!peer)
+                {
+                    console.log('Could not find affiliated peer')
+                    return
+                }
+
+                peer.connection.addIceCandidate(new RTCIceCandidate(data.candidate))
+                console.log('added remote candidate')
+            })
         },
 
         computed: {
@@ -146,6 +161,10 @@
                 })
             },
 
+            getPeerOrNull(socketId) {
+                return this.peers.get(socketId) || null
+            },
+
             async getOrCreatePeer(socketId) {
                 if (this.peers.get(socketId))
                 {
@@ -159,13 +178,22 @@
                 }
                 
                 peer.connection.ontrack = (e) => {
-                    
                     const remoteVideo = document.getElementById('video_'+socketId)
                     
                     if (remoteVideo)
                     {
                         remoteVideo.srcObject = e.streams[0]
                         remoteVideo.play()
+                    }
+                }
+
+                peer.connection.onicecandidate = (e) => {
+                    if (e.candidate)
+                    {
+                        this.socket.emit('peer.add.candidate', {
+                            candidate: e.candidate,
+                            to: socketId
+                        })
                     }
                 }
 

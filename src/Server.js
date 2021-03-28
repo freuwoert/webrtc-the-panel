@@ -111,6 +111,15 @@ module.exports = class Server {
                 })
             })
 
+            socket.on('peer.add.candidate', data => {
+                socket.to(data.to).emit('peer.add.candidate', {
+                    candidate: data.candidate,
+                    from: socket.id,
+                })
+            })
+
+
+
             socket.on('disconnect', () => {
                 // socket.broadcast.emit('remove-overlay', {
                 //     socketId: socket.id

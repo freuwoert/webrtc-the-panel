@@ -12,7 +12,7 @@
             </div>
         </div>
         <div class="controls">
-            <a :href="'/?room='+room.id" target="_blank">Simulate other user</a>
+            <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
         </div>
         <div class="player"></div>
         <div class="chat"></div>
