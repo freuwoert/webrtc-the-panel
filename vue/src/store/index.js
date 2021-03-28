@@ -9,7 +9,7 @@ export default new Vuex.Store({
         room: null,
         peers: new Map,
         overlays: [],
-        socket: io('localhost:5000'),
+        socket: io(),
     },
 
     getters: {
