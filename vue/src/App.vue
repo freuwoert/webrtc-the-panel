@@ -160,7 +160,7 @@
                 
                 peer.connection.ontrack = (e) => {
                     
-                    const remoteVideo = this.$refs['video_'+socketId][0]
+                    const remoteVideo = document.getElementById('video_'+socketId)
                     
                     if (remoteVideo)
                     {

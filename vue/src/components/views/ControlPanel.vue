@@ -2,9 +2,12 @@
     <div id="wrapper">
         <div class="users">
             <div class="user" v-for="(user, i) in room.users" :key="i">
-                <span class="name">{{user.name}}</span>
+                <span class="name">
+                    {{user.name}}
+                    <span v-if="user.id === socket.id">(you)</span>
+                </span>
 
-                <video v-if="user.id !== socket.id" autoplay muted class="remote-video" :ref="'video_'+user.id"></video>
+                <video v-if="user.id !== socket.id" autoplay muted class="video" :id="'video_'+user.id"></video>
                 <video v-else autoplay muted class="video" id="local-video"></video>
             </div>
         </div>
