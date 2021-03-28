@@ -112,6 +112,7 @@ module.exports = class Server {
             })
 
             socket.on('peer.add.candidate', data => {
+                console.log('got candidate from: '+socket.id+' to '+data.to)
                 socket.to(data.to).emit('peer.add.candidate', {
                     candidate: data.candidate,
                     from: socket.id,

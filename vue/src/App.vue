@@ -190,6 +190,7 @@
                 peer.connection.onicecandidate = (e) => {
                     if (e.candidate)
                     {
+                        console.log('generated ice candidate... about to send')
                         this.socket.emit('peer.add.candidate', {
                             candidate: e.candidate,
                             to: socketId
