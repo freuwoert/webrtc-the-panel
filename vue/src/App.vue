@@ -86,6 +86,10 @@
                 this.$store.commit('room', data.room)
             })
 
+            this.socket.on('room.user.left', data => {
+                this.$store.commit('removeUserFromRoom', data.userId)
+            })
+
 
 
             if (this.url.roomId)

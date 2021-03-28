@@ -113,6 +113,7 @@ module.exports = class Server {
 
             socket.on('peer.add.candidate', data => {
                 console.log('got candidate from: '+socket.id+' to '+data.to)
+                
                 socket.to(data.to).emit('peer.add.candidate', {
                     candidate: data.candidate,
                     from: socket.id,
@@ -121,10 +122,19 @@ module.exports = class Server {
 
 
 
-            socket.on('disconnect', () => {
-                // socket.broadcast.emit('remove-overlay', {
-                //     socketId: socket.id
-                // })
+            socket.on('disconnecting', () => {
+                let rooms = Array.from(socket.rooms.values())
+                rooms.shift()
+
+                for (const roomId of rooms)
+                {
+                    let room = this.roomDict.get(roomId)
+
+                    room.users.splice(room.users.findIndex(e => e.id === roomId), 1)
+                    this.io.to(roomId).emit('room.user.left', {
+                        userId: socket.id,
+                    })
+                }
             })
         })
     }

@@ -46,6 +46,10 @@ export default new Vuex.Store({
             state.room = data
         },
 
+        removeUserFromRoom(state, data) {
+            state.room.users.splice(state.room.users.findIndex(e => e.id === data), 1)
+        },
+
         overlays(state, data) {
             state.overlays = data
         },
