@@ -37,6 +37,21 @@
         },
 
         created() {
+            navigator.getUserMedia({
+                video: true,
+                audio: true,
+            },
+            stream => {
+                stream.getTracks().forEach(track => {
+                    this.$store.commit(track.kind === 'audio' ? 'localAudioTrack' : 'localVideoTrack', track)
+                })
+
+                this.$store.commit('mainLocalStream', stream)
+            },
+            error => {
+                console.log(error.message)
+            })
+
             // this.audioOutput = this.audioContext.createMediaStreamDestination()
 
             // this.audioOutput.stream.getAudioTracks().forEach(track => {
@@ -73,13 +88,15 @@
             this.socket.on('room.join', data => {
                 this.$store.commit('view', 'room')
 
-                for (const userId of data.users)
-                {
-                    if (userId !== this.socket.id)
+                setTimeout(() => {
+                    for (const userId of data.users)
                     {
-                        this.connectToPeer(userId)
+                        if (userId !== this.socket.id)
+                        {
+                            this.connectToPeer(userId)
+                        }
                     }
-                }
+                }, 2000)
             })
 
             this.socket.on('room.sync', data => {
@@ -150,6 +167,18 @@
             socket() {
                 return this.$store.getters.socket
             },
+
+            mainLocalStream() {
+                return this.$store.getters.mainLocalStream
+            },
+
+            localAudioTrack() {
+                return this.$store.getters.localAudioTrack
+            },
+
+            localVideoTrack() {
+                return this.$store.getters.localVideoTrack
+            },
         },
 
         methods: {
@@ -202,18 +231,8 @@
                     }
                 }
 
-                try {
-                    let stream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: true,
-                    })
-                    
-                    stream.getTracks().forEach(track => {
-                        peer.connection.addTrack(track, stream)
-                    })
-                } catch (error) {
-                    console.log(error.message)
-                }
+                peer.connection.addTrack(this.localAudioTrack, this.mainLocalStream)
+                peer.connection.addTrack(this.localVideoTrack, this.mainLocalStream)
 
                 this.peers.set(socketId, peer)
 
@@ -250,25 +269,34 @@
 </script>
 
 <style lang="sass">
+    @font-face
+        font-family: 'Material Icons'
+        src: url("assets/fonts/mdi/materialdesignicons-webfont.eot?v=5.7.55")
+        src: url("assets/fonts/mdi/materialdesignicons-webfont.eot?#iefix&v=5.7.55") format("embedded-opentype"), url("assets/fonts/mdi/materialdesignicons-webfont.woff2?v=5.7.55") format("woff2"), url("assets/fonts/mdi/materialdesignicons-webfont.woff?v=5.7.55") format("woff"), url("assets/fonts/mdi/materialdesignicons-webfont.ttf?v=5.7.55") format("truetype")
+        font-weight: normal
+        font-style: normal
+
     html, #app
         height: 100%
         width: 100%
 
     body
-        height: 100%
-        width: 100%
-        --bg: #fff
-        --bg-dark: #f4f4f4
+        --bg: #393e46
+        --bg-dark: #222831
         --text-color: #252525
         --primary: #6930c3
         --accent: #64dfdf
         --accent-light: #80ffdb
+        --border: 1px solid var(--bg-dark)
+        
+        height: 100%
+        width: 100%
         margin: 0
         padding: 0
         font-family: "Roboto", sans-serif
         -webkit-font-smoothing: antialiased
         -moz-osx-font-smoothing: grayscale
-        background: var(--bg)
+        background: var(--bg-dark)
         color: var(--text-color)
 
     a,
@@ -278,6 +306,7 @@
         line-height: 40px
         padding: 0 15px
         font-size: 13px
+        text-align: center
         text-transform: uppercase
         letter-spacing: 2px
         border-radius: 5px
@@ -291,6 +320,15 @@
         filter: drop-shadow(0 3px 7px #00000040)
         font-family: "Roboto", sans-serif
         text-decoration: none
+        vertical-align: top
+
+        &.icon
+            font-family: 'Material Icons'
+            font-size: 20px
+            width: 40px
+            padding: 0
+            font-weight: 300
+            letter-spacing: 0
 
         &:hover
             background: var(--accent-light)

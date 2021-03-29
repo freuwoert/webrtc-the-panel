@@ -1,5 +1,9 @@
 <template>
     <div id="wrapper">
+        <div class="menu">
+            <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
+            <button class="icon" @click="toggleMute()">{{localAudioTrack.enabled ? '&#983916;' : '&#983917;'}}</button>
+        </div>
         <div class="users">
             <div class="user" v-for="(user, i) in room.users" :key="i">
                 <span class="name">
@@ -11,9 +15,7 @@
                 <video v-else autoplay muted class="video" id="local-video"></video>
             </div>
         </div>
-        <div class="controls">
-            <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
-        </div>
+        <div class="controls"></div>
         <div class="player"></div>
         <div class="chat"></div>
         <div class="mixer"></div>
@@ -23,16 +25,11 @@
 <script>
     export default {
         mounted() {
-            navigator.getUserMedia({
-                video: true,
-                audio: true,
-            },
-            stream => {
-                document.getElementById('local-video').srcObject = stream
-            },
-            error => {
-                console.log(error.message)
-            })
+            
+        },
+
+        mounted() {
+            document.getElementById('local-video').srcObject = this.mainLocalStream
         },
 
         computed: {
@@ -43,6 +40,21 @@
             socket() {
                 return this.$store.getters.socket
             },
+
+            mainLocalStream() {
+                return this.$store.getters.mainLocalStream
+            },
+
+            localAudioTrack() {
+                return this.$store.getters.localAudioTrack
+            },
+        },
+
+        methods: {
+            toggleMute() {
+                this.$store.commit('setMuteOnLocalAudioTrack', !this.localAudioTrack.enabled)
+                this.$forceUpdate()
+            }
         },
     }
 </script>
@@ -52,26 +64,31 @@
         width: 100%
         height: 100%
         display: grid
-        grid-template-columns: 400px 1fr 400px
-        grid-template-rows: 150px 1fr 350px
-        grid-template-areas: "users users users" "controls player chat" "controls mixer mixer"
-        gap: 10px
-        padding: 10px
+        grid-template-columns: 350px 1fr 350px
+        grid-template-rows: 60px 150px 1fr 350px
+        grid-template-areas: "menu menu menu" "users users users" "controls player chat" "mixer mixer mixer"
+        padding: 3px
+        gap: 3px
 
-    .users, .controls, .player, .chat, .mixer
+    .users, .controls, .player, .chat, .mixer, .menu
         background: var(--bg)
-        filter: drop-shadow(0 1px 1.5px #00000030)
-        border-radius: 5px
+        border-radius: 4px
+
+    .menu
+        grid-area: menu
+        padding: 10px
+        background-image: url('../../assets/images/terrain_white.svg')
+        background-size: cover
+        display: flex
+        gap: 10px
 
     .users
         grid-area: users
-        display: flex
         padding: 10px
-        gap: 10px
+        padding-left: 0
 
     .controls
         grid-area: controls
-        padding: 10px
 
     .player
         grid-area: player
@@ -86,11 +103,14 @@
         height: 100%
         width: 200px
         position: relative
+        vertical-align: top
+        display: inline-block
+        margin-left: 10px
 
         .video
             height: 100%
             width: 100%
-            object-fit: contain
+            object-fit: cover
             background: black
             border-radius: 5px
 

@@ -5,14 +5,38 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
+        socket: io(),
+
+        localTracks: {
+            video: null,
+            audio: null,
+        },
+        
+        localStreams: {
+            main: null,
+        },
+
         view: 'create-room',
+        overlays: [],
         room: null,
         peers: new Map,
-        overlays: [],
-        socket: io(),
     },
 
     getters: {
+        localAudioTrack(state) {
+            return state.localTracks.audio
+        },
+
+        localVideoTrack(state) {
+            return state.localTracks.video
+        },
+
+        mainLocalStream(state) {
+            return state.localStreams.main
+        },
+
+
+
         view(state) {
             return state.view
         },
@@ -38,6 +62,24 @@ export default new Vuex.Store({
     },
 
     mutations: {
+        localVideoTrack(state, data) {
+            state.localTracks.video = data
+        },
+
+        localAudioTrack(state, data) {
+            state.localTracks.audio = data
+        },
+
+        setMuteOnLocalAudioTrack(state, data) {
+            Vue.set(state.localTracks.audio, 'enabled', data)
+        },
+
+        mainLocalStream(state, data) {
+            state.localStreams.main = data
+        },
+
+
+
         view(state, data) {
             state.view = data
         },
