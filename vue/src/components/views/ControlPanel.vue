@@ -1,8 +1,10 @@
 <template>
     <div id="wrapper">
         <div class="menu">
-            <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
             <button class="icon" @click="toggleMute()">{{localAudioTrack.enabled ? '&#983916;' : '&#983917;'}}</button>
+            <button class="icon" @click="toggleCamera()">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
+            <div class="spacer"></div>
+            <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
         </div>
         <div class="users">
             <div class="user" v-for="(user, i) in room.users" :key="i">
@@ -41,6 +43,10 @@
                 return this.$store.getters.socket
             },
 
+            peers() {
+                return this.$store.getters.peers
+            },
+
             mainLocalStream() {
                 return this.$store.getters.mainLocalStream
             },
@@ -48,13 +54,62 @@
             localAudioTrack() {
                 return this.$store.getters.localAudioTrack
             },
+
+            localVideoTrack() {
+                return this.$store.getters.localVideoTrack
+            },
         },
 
         methods: {
             toggleMute() {
                 this.$store.commit('setMuteOnLocalAudioTrack', !this.localAudioTrack.enabled)
                 this.$forceUpdate()
-            }
+            },
+
+            toggleCamera() {
+                if (this.localVideoTrack)
+                {
+                    let peers = Array.from(this.peers.values())
+
+
+                    for (const peer of peers)
+                    {
+                        peer.connection.removeTrack(peer.videoTrack)
+                        peer.videoTrack = null
+                    }
+
+                    document.getElementById('local-video').srcObject = null
+
+                    this.$store.commit('localVideoTrack', null)
+                }
+                else
+                {
+                    navigator.getUserMedia({
+                        video: true,
+                        audio: true,
+                    },
+                    stream => {
+                        stream.getTracks().forEach(track => {
+                            this.$store.commit(track.kind === 'audio' ? 'localAudioTrack' : 'localVideoTrack', track)
+                        })
+
+                        this.$store.commit('mainLocalStream', stream)
+
+                        document.getElementById('local-video').srcObject = this.mainLocalStream
+
+                        let peers = Array.from(this.peers.values())
+
+                        for (const peer of peers)
+                        {
+                            peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.mainLocalStream)
+                            peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.mainLocalStream)
+                        }
+                    },
+                    error => {
+                        console.log(error.message)
+                    })
+                }
+            },
         },
     }
 </script>
@@ -81,6 +136,9 @@
         background-size: cover
         display: flex
         gap: 10px
+
+        .spacer
+            flex: 1
 
     .users
         grid-area: users

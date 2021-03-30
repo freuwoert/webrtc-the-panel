@@ -38,7 +38,7 @@
 
         created() {
             navigator.getUserMedia({
-                video: true,
+                // video: true,
                 audio: true,
             },
             stream => {
@@ -63,18 +63,12 @@
             // this.loadAudio('./IntruderAlert.mp3')
 
             this.socket.on("join-request-answer", async data => {
+                console.log('🔹 answer')
                 let peer = this.peers.get(data.from)
 
                 if (!peer) return
                 
                 await peer.connection.setRemoteDescription(new RTCSessionDescription(data.answer))
-
-                if (!peer.isConnected)
-                {
-                    // Why do we do this two times? Like for real, I don't get it
-                    peer.isConnected = true
-                    this.connectToPeer(data.from)
-                }
             })
 
 
@@ -119,7 +113,7 @@
 
 
             this.socket.on('join-request-offer', async data => {
-                console.log('Offer received!')
+                console.log('🔹 offer')
 
                 let peer = await this.getOrCreatePeer(data.from)
 
@@ -132,7 +126,7 @@
                     to: data.from
                 })
                 
-                console.log('Answer sent!')
+                console.log('🔸 answer')
             })
 
 
@@ -147,7 +141,7 @@
                 }
 
                 peer.connection.addIceCandidate(new RTCIceCandidate(data.candidate))
-                console.log('added remote candidate')
+                console.log('🔹 ice candidate')
             })
         },
 
@@ -206,11 +200,13 @@
 
                 let peer = {
                     socketId: socketId,
-                    isConnected: false,
+                    videoTrack: null,
+                    audioTrack: null,
                     connection: new RTCPeerConnection(this.peerConnectionConfig),
                 }
                 
                 peer.connection.ontrack = (e) => {
+                    console.log('🔹 track')
                     const remoteVideo = document.getElementById('video_'+socketId)
                     
                     if (remoteVideo)
@@ -223,7 +219,7 @@
                 peer.connection.onicecandidate = (e) => {
                     if (e.candidate)
                     {
-                        console.log('generated ice candidate... about to send')
+                        console.log('🔹 ice candidate')
                         this.socket.emit('peer.add.candidate', {
                             candidate: e.candidate,
                             to: socketId
@@ -231,8 +227,13 @@
                     }
                 }
 
-                peer.connection.addTrack(this.localAudioTrack, this.mainLocalStream)
-                peer.connection.addTrack(this.localVideoTrack, this.mainLocalStream)
+                peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.mainLocalStream)
+
+                peer.connection.addEventListener('negotiationneeded', () => {
+                    console.log('🔸 renegotiation')
+                    this.connectToPeer(socketId)
+                }, false)
+                // peer.connection.addTrack(this.localVideoTrack, this.mainLocalStream)
 
                 this.peers.set(socketId, peer)
 
