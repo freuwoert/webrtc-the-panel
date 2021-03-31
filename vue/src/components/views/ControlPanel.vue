@@ -58,6 +58,10 @@
             localVideoTrack() {
                 return this.$store.getters.localVideoTrack
             },
+
+            localAudioContext() {
+                return this.$store.getters.localAudioContext
+            },
         },
 
         methods: {

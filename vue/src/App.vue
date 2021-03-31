@@ -3,6 +3,8 @@
         <splash-create-room v-show="view === 'create-room'"></splash-create-room>
         <splash-join-room v-show="view === 'join-room'"></splash-join-room>
         <control-panel v-show="view === 'room'" v-if="room"></control-panel>
+
+        <audio id="test-audio"></audio>
     </div>
 </template>
 
@@ -38,15 +40,40 @@
 
         created() {
             navigator.getUserMedia({
-                // video: true,
                 audio: true,
             },
             stream => {
                 stream.getTracks().forEach(track => {
-                    this.$store.commit(track.kind === 'audio' ? 'localAudioTrack' : 'localVideoTrack', track)
+                    if (track.kind === 'video') this.$store.commit('localVideoTrack', track)
                 })
 
                 this.$store.commit('mainLocalStream', stream)
+                this.$store.commit('localAudioSource', this.localAudioContext.createMediaStreamSource(this.mainLocalStream))
+                this.$store.commit('localAudioGainNode', this.localAudioContext.createAnalyser())
+                this.localAudioGainNode.fftSize = 32
+                this.$store.commit('localAudioDestination',this.localAudioContext.createMediaStreamDestination())
+                this.localAudioSource.connect(this.localAudioGainNode)
+                this.localAudioSource.connect(this.localAudioDestination)
+
+                this.localAudioDestination.stream.getAudioTracks().forEach(track => {
+                    this.$store.commit('localAudioTrack', track, this.localAudioDestination.stream)
+                    document.getElementById('test-audio').srcObject = this.localAudioDestination.stream
+                    document.getElementById('test-audio').play()
+                    // this.localAudioSource
+                })
+
+                var bufferLength = this.localAudioGainNode.frequencyBinCount
+                let t = new Uint8Array(bufferLength)
+
+                setInterval(() => {
+                    // console.log(20 * log10( this.localAudioGainNode.gain.value ))
+                    this.localAudioGainNode.getByteTimeDomainData(t)
+                    console.log((t.reduce((a, c) => a + c) / bufferLength) > 128)
+                }, 10)
+
+                function log10(x) {
+                    return Math.log(x)/Math.LN10;
+                }
             },
             error => {
                 console.log(error.message)
@@ -172,6 +199,22 @@
 
             localVideoTrack() {
                 return this.$store.getters.localVideoTrack
+            },
+
+            localAudioContext() {
+                return this.$store.getters.localAudioContext
+            },
+
+            localAudioSource() {
+                return this.$store.getters.localAudioSource
+            },
+
+            localAudioGainNode() {
+                return this.$store.getters.localAudioGainNode
+            },
+
+            localAudioDestination() {
+                return this.$store.getters.localAudioDestination
             },
         },
 

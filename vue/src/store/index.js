@@ -16,6 +16,15 @@ export default new Vuex.Store({
             main: null,
         },
 
+        audio: {
+            local: {
+                context: new AudioContext(),
+                source: null,
+                gainNode: null,
+                destination: null,
+            },
+        },
+
         view: 'create-room',
         overlays: [],
         room: null,
@@ -33,6 +42,22 @@ export default new Vuex.Store({
 
         mainLocalStream(state) {
             return state.localStreams.main
+        },
+
+        localAudioContext(state) {
+            return state.audio.local.context
+        },
+
+        localAudioSource(state) {
+            return state.audio.local.source
+        },
+
+        localAudioGainNode(state) {
+            return state.audio.local.gainNode
+        },
+
+        localAudioDestination(state) {
+            return state.audio.local.destination
         },
 
 
@@ -76,6 +101,18 @@ export default new Vuex.Store({
 
         mainLocalStream(state, data) {
             state.localStreams.main = data
+        },
+
+        localAudioSource(state, data) {
+            state.audio.local.source = data
+        },
+
+        localAudioGainNode(state, data) {
+            state.audio.local.gainNode = data
+        },
+
+        localAudioDestination(state, data) {
+            state.audio.local.destination = data
         },
 
 
