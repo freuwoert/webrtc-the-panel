@@ -58,8 +58,8 @@
                 this.localAudioDestination.stream.getAudioTracks().forEach(track => {
                     this.$store.commit('localAudioTrack', track, this.localAudioDestination.stream)
                     document.getElementById('test-audio').srcObject = this.localAudioDestination.stream
-                    // document.getElementById('test-audio').play()
-                    // this.localAudioSource
+                    this.localAudioGainNode.maxDecibels = 0
+                    this.localAudioGainNode.minDecibels = -56
                 })
             },
             error => {
@@ -314,7 +314,7 @@
     body
         --bg: #393e46
         --bg-dark: #222831
-        --text-color: #252525
+        --text-color: #ebefff
         --primary: #6930c3
         --accent: #64dfdf
         --accent-light: #80ffdb

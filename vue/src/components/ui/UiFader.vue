@@ -1,8 +1,28 @@
 <template>
     <div class="fader">
+        
+        <div class="on-indicator"></div>
+        <div class="label">{{label || 'unnamed'}}</div>
+
         <div class="level-bar">
             <div class="level" :style="'clip-path: inset( calc(100% - '+level+'%) 0 0 0)'"></div>
         </div>
+
+        <div class="decibel-labels">
+            <span>- 0</span>
+            <span>- 8</span>
+            <span>- 16</span>
+            <span>- 24</span>
+            <span>- 32</span>
+            <span>- 40</span>
+            <span>- 48</span>
+            <span>- 56</span>
+        </div>
+
+        <div class="screw screw-top-left"></div>
+        <div class="screw screw-top-right"></div>
+        <div class="screw screw-bottom-left"></div>
+        <div class="screw screw-bottom-right"></div>
     </div>
 </template>
 
@@ -10,25 +30,73 @@
     export default {
         props: {
             level: Number,
+            label: String,
         },
     }
 </script>
 
 <style lang="sass" scoped>
     .fader
-        width: 80px
-        height: 250px
+        width: 100px
+        height: 100%
         background: var(--bg)
         padding: 10px
         border-radius: 4px
+        position: relative
+
+        .on-indicator
+            height: 6px
+            width: 6px
+            border-radius: 6px
+            background: red
+            box-shadow: 0 0 4px red
+            position: absolute
+            top: 15px
+            left: 11px
+
+        .label
+            position: absolute
+            top: 24px
+            left: 13px
+            font-size: 12px
+            letter-spacing: 1px
+            font-weight: 500
+            white-space: nowrap
+            text-transform: uppercase
+            transform: translateX(-100%) rotate(-90deg)
+            transform-origin: center right
+
+        .screw
+            height: 4px
+            width: 4px
+            border-radius: 4px
+            background: var(--bg-dark)
+            position: absolute
+            --screw-space: 3px
+
+            &.screw-top-left
+                left: var(--screw-space)
+                top: var(--screw-space)
+
+            &.screw-top-right
+                right: var(--screw-space)
+                top: var(--screw-space)
+
+            &.screw-bottom-left
+                left: var(--screw-space)
+                bottom: var(--screw-space)
+
+            &.screw-bottom-right
+                right: var(--screw-space)
+                bottom: var(--screw-space)
 
         .level-bar
-            width: 5px
-            height: 100%
+            width: 34px
+            height: calc(100% - 20px)
             background: var(--bg-dark)
-            border-radius: 1px
-            position: relative
-            overflow: hidden
+            position: absolute
+            top: 10px
+            left: calc(50% - 17px)
 
             .level
                 height: 100%
@@ -37,6 +105,19 @@
                 top: 0
                 left: 0
                 background: rgb(70,232,80)
-                background: linear-gradient(0deg, rgba(70,232,80,1) 60%, rgba(236,206,33,1) 60.5%, rgba(236,206,33,1) 85%, rgba(255,44,13,1) 85.5%)
+                background: linear-gradient(0deg, rgba(70,232,80,1) 60%, rgba(236,206,33,1) 60.1%, rgba(236,206,33,1) 85%, rgba(255,44,13,1) 85.1%)
                 clip-path: inset(100% 0 0 0)
+
+        .decibel-labels
+            font-size: 9px
+            height: calc(100% - 30px)
+            width: 20px
+            position: absolute
+            top: 15px
+            right: 5px
+            display: flex
+            flex-direction: column
+            align-items: flex-start
+            justify-content: space-between
+            opacity: 0.7
 </style>

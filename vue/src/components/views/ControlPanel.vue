@@ -21,7 +21,14 @@
         <div class="player"></div>
         <div class="chat"></div>
         <div class="mixer">
-            <ui-fader :level="level"></ui-fader>
+            <ui-fader label="Mic - Local" :level="level"></ui-fader>
+
+            <div class="spacer">
+                <div class="screw screw-top-left"></div>
+                <div class="screw screw-top-right"></div>
+                <div class="screw screw-bottom-left"></div>
+                <div class="screw screw-bottom-right"></div>
+            </div>
         </div>
     </div>
 </template>
@@ -184,6 +191,40 @@
 
     .mixer
         grid-area: mixer
+        background: var(--bg-dark)
+        gap: 4px
+        display: flex
+
+        .spacer
+            flex: 1
+            border-radius: 4px
+            background: var(--bg)
+            height: 100%
+            position: relative
+
+            .screw
+                height: 4px
+                width: 4px
+                border-radius: 4px
+                background: var(--bg-dark)
+                position: absolute
+                --screw-space: 3px
+
+                &.screw-top-left
+                    left: var(--screw-space)
+                    top: var(--screw-space)
+
+                &.screw-top-right
+                    right: var(--screw-space)
+                    top: var(--screw-space)
+
+                &.screw-bottom-left
+                    left: var(--screw-space)
+                    bottom: var(--screw-space)
+
+                &.screw-bottom-right
+                    right: var(--screw-space)
+                    bottom: var(--screw-space)
 
     .user
         height: 100%
