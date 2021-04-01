@@ -58,22 +58,9 @@
                 this.localAudioDestination.stream.getAudioTracks().forEach(track => {
                     this.$store.commit('localAudioTrack', track, this.localAudioDestination.stream)
                     document.getElementById('test-audio').srcObject = this.localAudioDestination.stream
-                    document.getElementById('test-audio').play()
+                    // document.getElementById('test-audio').play()
                     // this.localAudioSource
                 })
-
-                var bufferLength = this.localAudioGainNode.frequencyBinCount
-                let t = new Uint8Array(bufferLength)
-
-                setInterval(() => {
-                    // console.log(20 * log10( this.localAudioGainNode.gain.value ))
-                    this.localAudioGainNode.getByteTimeDomainData(t)
-                    console.log((t.reduce((a, c) => a + c) / bufferLength) > 128)
-                }, 10)
-
-                function log10(x) {
-                    return Math.log(x)/Math.LN10;
-                }
             },
             error => {
                 console.log(error.message)

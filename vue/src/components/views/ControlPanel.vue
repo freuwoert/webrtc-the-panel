@@ -20,18 +20,34 @@
         <div class="controls"></div>
         <div class="player"></div>
         <div class="chat"></div>
-        <div class="mixer"></div>
+        <div class="mixer">
+            <ui-fader :level="level"></ui-fader>
+        </div>
     </div>
 </template>
 
 <script>
+    import UiFader from '../ui/UiFader.vue'
+
     export default {
-        mounted() {
-            
+        data() {
+            return {
+                level: 0,
+            }
         },
 
         mounted() {
             document.getElementById('local-video').srcObject = this.mainLocalStream
+
+            setTimeout(() => {
+                var bufferLength = this.localAudioGainNode.frequencyBinCount
+                let t = new Uint8Array(bufferLength)
+
+                setInterval(() => {
+                    this.localAudioGainNode.getByteFrequencyData(t)
+                    this.level = (t.reduce((a, c) => a + c) / bufferLength / 127 * 100)
+                }, 10)
+            }, 1000)
         },
 
         computed: {
@@ -61,6 +77,10 @@
 
             localAudioContext() {
                 return this.$store.getters.localAudioContext
+            },
+
+            localAudioGainNode() {
+                return this.$store.getters.localAudioGainNode
             },
         },
 
@@ -114,6 +134,10 @@
                     })
                 }
             },
+        },
+
+        components: {
+            UiFader,
         },
     }
 </script>
