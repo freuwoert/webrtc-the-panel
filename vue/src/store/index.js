@@ -7,21 +7,19 @@ export default new Vuex.Store({
     state: {
         socket: io(),
 
-        localTracks: {
-            video: null,
-            audio: null,
-        },
-        
-        localStreams: {
-            main: null,
-        },
-
-        audio: {
-            local: {
+        local: {
+            stream: null,
+            audio: {
+                track: null,
+                stream: null,
                 context: new AudioContext(),
                 source: null,
                 gainNode: null,
+                analyzer: null,
                 destination: null,
+            },
+            video: {
+                track: null,
             },
         },
 
@@ -33,31 +31,35 @@ export default new Vuex.Store({
 
     getters: {
         localAudioTrack(state) {
-            return state.localTracks.audio
+            return state.local.audio.track
         },
 
         localVideoTrack(state) {
-            return state.localTracks.video
+            return state.local.video.track
         },
 
-        mainLocalStream(state) {
-            return state.localStreams.main
+        localStream(state) {
+            return state.local.stream
         },
 
         localAudioContext(state) {
-            return state.audio.local.context
+            return state.local.audio.context
         },
 
         localAudioSource(state) {
-            return state.audio.local.source
+            return state.local.audio.source
         },
 
         localAudioGainNode(state) {
-            return state.audio.local.gainNode
+            return state.local.audio.gainNode
+        },
+
+        localAudioAnalyzer(state) {
+            return state.local.audio.analyzer
         },
 
         localAudioDestination(state) {
-            return state.audio.local.destination
+            return state.local.audio.destination
         },
 
 
@@ -84,35 +86,130 @@ export default new Vuex.Store({
     },
     
     actions: {
+        async setUserMediaInput(state, options) {
+            let stream
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: options.requestAudio || false,
+                    video: options.requestVideo || false,
+                })
+            } catch (error) {
+                throw error.message
+            }
+
+            state.commit('localStream', stream)
+
+
+
+            // Run audio setup
+            if (options.requestAudio)
+            {
+                // AUDIO SETUP:
+                // Source -> GainNode -> Analyzer & Destination
+                state.commit('localAudioSource', state.getters.localAudioContext.createMediaStreamSource(state.getters.localStream))
+                state.commit('localAudioAnalyzer', state.getters.localAudioContext.createAnalyser())
+                state.commit('localAudioGainNode', state.getters.localAudioContext.createGain())
+                state.commit('localAudioDestination', state.getters.localAudioContext.createMediaStreamDestination())
+    
+                state.getters.localAudioSource.connect(state.getters.localAudioGainNode)
+                state.getters.localAudioGainNode.connect(state.getters.localAudioAnalyzer)
+                state.getters.localAudioGainNode.connect(state.getters.localAudioDestination)
+                
+                state.getters.localAudioAnalyzer.fftSize = 32
+                state.getters.localAudioAnalyzer.maxDecibels = 0
+                state.getters.localAudioAnalyzer.minDecibels = -56
+    
+                state.getters.localAudioGainNode.gain.setValueAtTime(1, state.getters.localAudioContext.currentTime)
+    
+                state.getters.localAudioDestination.stream.getAudioTracks().forEach(track => {
+                    state.commit('localAudioTrack', track, state.getters.localAudioDestination.stream)
+                })
+            }
+            else if (state.getters.localAudioTrack)
+            {
+                state.getters.localAudioTrack.stop()
+                state.commit('localAudioTrack', null)
+            }
+
+
+
+            // Run video setup
+            if (options.requestVideo)
+            {
+                stream.getVideoTracks().forEach(track => {
+                    state.commit('localVideoTrack', track)
+                })
+            }
+            else if (state.getters.localVideoTrack)
+            {
+                state.getters.localVideoTrack.stop()
+                state.commit('localVideoTrack', null)
+            }
+        },
+
+        async turnOnUserCam(state) {
+            await state.dispatch('setUserMediaInput', {
+                requestAudio: true,
+                requestVideo: true,
+            })
+            
+            let peers = Array.from(state.getters.peers.values())
+
+            for (let peer of peers)
+            {
+                peer.audioTrack = peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
+                peer.videoTrack = peer.connection.addTrack(state.getters.localVideoTrack, state.getters.localStream)
+            }
+        },
+
+        async turnOffUserCam(state) {
+            await state.dispatch('setUserMediaInput', {
+                requestAudio: true,
+                requestVideo: false,
+            })
+            
+            let peers = Array.from(state.getters.peers.values())
+            
+            for (let peer of peers)
+            {
+                peer.audioTrack = peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
+                peer.videoTrack = peer.connection.removeTrack(peer.videoTrack) || null
+            }
+        },
     },
 
     mutations: {
         localVideoTrack(state, data) {
-            state.localTracks.video = data
+            state.local.video.track = data
         },
 
         localAudioTrack(state, data) {
-            state.localTracks.audio = data
+            state.local.audio.track = data
         },
 
         setMuteOnLocalAudioTrack(state, data) {
-            Vue.set(state.localTracks.audio, 'enabled', data)
+            Vue.set(state.local.audio.track, 'enabled', data)
         },
 
-        mainLocalStream(state, data) {
-            state.localStreams.main = data
+        localStream(state, data) {
+            state.local.stream = data
         },
 
         localAudioSource(state, data) {
-            state.audio.local.source = data
+            state.local.audio.source = data
         },
 
         localAudioGainNode(state, data) {
-            state.audio.local.gainNode = data
+            state.local.audio.gainNode = data
+        },
+
+        localAudioAnalyzer(state, data) {
+            state.local.audio.analyzer = data
         },
 
         localAudioDestination(state, data) {
-            state.audio.local.destination = data
+            state.local.audio.destination = data
         },
 
 

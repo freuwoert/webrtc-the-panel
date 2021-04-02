@@ -3,8 +3,6 @@
         <splash-create-room v-show="view === 'create-room'"></splash-create-room>
         <splash-join-room v-show="view === 'join-room'"></splash-join-room>
         <control-panel v-show="view === 'room'" v-if="room"></control-panel>
-
-        <audio id="test-audio"></audio>
     </div>
 </template>
 
@@ -38,35 +36,10 @@
             }
         },
 
-        created() {
-            navigator.getUserMedia({
-                audio: true,
-            },
-            stream => {
-                stream.getTracks().forEach(track => {
-                    if (track.kind === 'video') this.$store.commit('localVideoTrack', track)
-                })
-
-                this.$store.commit('mainLocalStream', stream)
-                this.$store.commit('localAudioSource', this.localAudioContext.createMediaStreamSource(this.mainLocalStream))
-                this.$store.commit('localAudioGainNode', this.localAudioContext.createAnalyser())
-                this.localAudioGainNode.fftSize = 32
-                this.$store.commit('localAudioDestination',this.localAudioContext.createMediaStreamDestination())
-                this.localAudioSource.connect(this.localAudioGainNode)
-                this.localAudioSource.connect(this.localAudioDestination)
-
-                this.localAudioDestination.stream.getAudioTracks().forEach(track => {
-                    this.$store.commit('localAudioTrack', track, this.localAudioDestination.stream)
-                    document.getElementById('test-audio').srcObject = this.localAudioDestination.stream
-                    this.localAudioGainNode.maxDecibels = 0
-                    this.localAudioGainNode.minDecibels = -56
-                })
-            },
-            error => {
-                console.log(error.message)
+        async created() {
+            await this.$store.dispatch('setUserMediaInput', {
+                requestAudio: true,
             })
-
-            // this.audioOutput = this.audioContext.createMediaStreamDestination()
 
             // this.audioOutput.stream.getAudioTracks().forEach(track => {
             //     this.peerConnection.addTrack(track, this.audioOutput.stream)
@@ -176,8 +149,8 @@
                 return this.$store.getters.socket
             },
 
-            mainLocalStream() {
-                return this.$store.getters.mainLocalStream
+            localStream() {
+                return this.$store.getters.localStream
             },
 
             localAudioTrack() {
@@ -257,13 +230,13 @@
                     }
                 }
 
-                peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.mainLocalStream)
+                peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.localStream)
 
                 peer.connection.addEventListener('negotiationneeded', () => {
                     console.log('🔸 renegotiation')
                     this.connectToPeer(socketId)
                 }, false)
-                // peer.connection.addTrack(this.localVideoTrack, this.mainLocalStream)
+                // peer.connection.addTrack(this.localVideoTrack, this.localStream)
 
                 this.peers.set(socketId, peer)
 

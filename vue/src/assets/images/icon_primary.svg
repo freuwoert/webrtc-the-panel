@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <clipPath id="clip-icon_primary">
+      <rect width="400" height="400"/>
+    </clipPath>
+  </defs>
+  <g id="icon_primary" clip-path="url(#clip-icon_primary)">
+    <path id="Pfad_4" data-name="Pfad 4" d="M90,0a90,90,0,0,1,90,90v90H0V90A90,90,0,0,1,90,0Z" transform="translate(0 220)" fill="#6930c3"/>
+    <path id="Pfad_3" data-name="Pfad 3" d="M90,0a90,90,0,0,1,90,90v90H0V90A90,90,0,0,1,90,0Z" transform="translate(220 220)" fill="#6930c3"/>
+    <path id="Pfad_5" data-name="Pfad 5" d="M0,0H90A90,90,0,1,1,0,90Z" fill="#6930c3"/>
+    <path id="Pfad_2" data-name="Pfad 2" d="M90,0a90,90,0,0,1,90,90v90H90A90,90,0,0,1,90,0Z" transform="translate(220)" fill="#6930c3"/>
+  </g>
+</svg>

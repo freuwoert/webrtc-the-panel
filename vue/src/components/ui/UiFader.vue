@@ -1,7 +1,7 @@
 <template>
     <div class="fader">
         
-        <div class="on-indicator"></div>
+        <div class="on-indicator" :class="{'on': level > 2}"></div>
         <div class="label">{{label || 'unnamed'}}</div>
 
         <div class="level-bar">
@@ -19,10 +19,7 @@
             <span>- 56</span>
         </div>
 
-        <div class="screw screw-top-left"></div>
-        <div class="screw screw-top-right"></div>
-        <div class="screw screw-bottom-left"></div>
-        <div class="screw screw-bottom-right"></div>
+        <ui-screws></ui-screws>
     </div>
 </template>
 
@@ -48,11 +45,14 @@
             height: 6px
             width: 6px
             border-radius: 6px
-            background: red
-            box-shadow: 0 0 4px red
             position: absolute
+            background: var(--bg-dark)
             top: 15px
             left: 11px
+
+            &.on
+                box-shadow: 0 0 4px red
+                background: red
 
         .label
             position: absolute
@@ -65,30 +65,6 @@
             text-transform: uppercase
             transform: translateX(-100%) rotate(-90deg)
             transform-origin: center right
-
-        .screw
-            height: 4px
-            width: 4px
-            border-radius: 4px
-            background: var(--bg-dark)
-            position: absolute
-            --screw-space: 3px
-
-            &.screw-top-left
-                left: var(--screw-space)
-                top: var(--screw-space)
-
-            &.screw-top-right
-                right: var(--screw-space)
-                top: var(--screw-space)
-
-            &.screw-bottom-left
-                left: var(--screw-space)
-                bottom: var(--screw-space)
-
-            &.screw-bottom-right
-                right: var(--screw-space)
-                bottom: var(--screw-space)
 
         .level-bar
             width: 34px

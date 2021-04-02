@@ -1,11 +1,19 @@
 <template>
     <div id="wrapper">
         <div class="menu">
+            <div class="logo-wrapper">
+                <img src="../../assets/images/logo_white.svg" alt="The Panel Logo" class="logo">
+            </div>
+            
+            <div class="spacer"></div>
+
             <button class="icon" @click="toggleMute()">{{localAudioTrack.enabled ? '&#983916;' : '&#983917;'}}</button>
             <button class="icon" @click="toggleCamera()">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
-            <div class="spacer"></div>
             <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
+
+            <ui-screws></ui-screws>
         </div>
+
         <div class="users">
             <div class="user" v-for="(user, i) in room.users" :key="i">
                 <span class="name">
@@ -14,28 +22,36 @@
                 </span>
 
                 <video v-if="user.id !== socket.id" autoplay class="video" :id="'video_'+user.id"></video>
-                <video v-else autoplay muted class="video" id="local-video"></video>
+                <video v-else autoplay muted class="video" id="video_local"></video>
             </div>
+
+            <ui-screws></ui-screws>
         </div>
-        <div class="controls"></div>
-        <div class="player"></div>
-        <div class="chat"></div>
+
+        <div class="controls">
+            <ui-screws></ui-screws>
+        </div>
+
+        <div class="player">
+            <ui-screws></ui-screws>
+        </div>
+
+        <div class="chat">
+            <ui-screws></ui-screws>
+        </div>
+
         <div class="mixer">
             <ui-fader label="Mic - Local" :level="level"></ui-fader>
 
             <div class="spacer">
-                <div class="screw screw-top-left"></div>
-                <div class="screw screw-top-right"></div>
-                <div class="screw screw-bottom-left"></div>
-                <div class="screw screw-bottom-right"></div>
+                <ui-screws></ui-screws>
+                <img src="../../assets/images/logo_white.svg" alt="The Panel Logo" class="logo">
             </div>
         </div>
     </div>
 </template>
 
 <script>
-    import UiFader from '../ui/UiFader.vue'
-
     export default {
         data() {
             return {
@@ -44,17 +60,23 @@
         },
 
         mounted() {
-            document.getElementById('local-video').srcObject = this.mainLocalStream
-
             setTimeout(() => {
-                var bufferLength = this.localAudioGainNode.frequencyBinCount
+                var bufferLength = this.localAudioAnalyzer.frequencyBinCount
                 let t = new Uint8Array(bufferLength)
 
                 setInterval(() => {
-                    this.localAudioGainNode.getByteFrequencyData(t)
+                    this.localAudioAnalyzer.getByteFrequencyData(t)
                     this.level = (t.reduce((a, c) => a + c) / bufferLength / 127 * 100)
-                }, 10)
+                }, 8)
             }, 1000)
+
+            this.updateVideoDOM('video_local', this.localStream)
+        },
+
+        watch: {
+            localVideoTrack() {
+                this.updateVideoDOM('video_local', this.localStream)
+            }
         },
 
         computed: {
@@ -70,8 +92,8 @@
                 return this.$store.getters.peers
             },
 
-            mainLocalStream() {
-                return this.$store.getters.mainLocalStream
+            localStream() {
+                return this.$store.getters.localStream
             },
 
             localAudioTrack() {
@@ -86,8 +108,8 @@
                 return this.$store.getters.localAudioContext
             },
 
-            localAudioGainNode() {
-                return this.$store.getters.localAudioGainNode
+            localAudioAnalyzer() {
+                return this.$store.getters.localAudioAnalyzer
             },
         },
 
@@ -100,52 +122,20 @@
             toggleCamera() {
                 if (this.localVideoTrack)
                 {
-                    let peers = Array.from(this.peers.values())
-
-
-                    for (const peer of peers)
-                    {
-                        peer.connection.removeTrack(peer.videoTrack)
-                        peer.videoTrack = null
-                    }
-
-                    document.getElementById('local-video').srcObject = null
-
-                    this.$store.commit('localVideoTrack', null)
+                    this.$store.dispatch('turnOffUserCam')
                 }
                 else
                 {
-                    navigator.getUserMedia({
-                        video: true,
-                        audio: true,
-                    },
-                    stream => {
-                        stream.getTracks().forEach(track => {
-                            this.$store.commit(track.kind === 'audio' ? 'localAudioTrack' : 'localVideoTrack', track)
-                        })
-
-                        this.$store.commit('mainLocalStream', stream)
-
-                        document.getElementById('local-video').srcObject = this.mainLocalStream
-
-                        let peers = Array.from(this.peers.values())
-
-                        for (const peer of peers)
-                        {
-                            peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.mainLocalStream)
-                            peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.mainLocalStream)
-                        }
-                    },
-                    error => {
-                        console.log(error.message)
-                    })
+                    this.$store.dispatch('turnOnUserCam')
                 }
             },
+
+            updateVideoDOM(id, stream) {
+                document.getElementById(id).srcObject = stream
+            }
         },
 
-        components: {
-            UiFader,
-        },
+        components: {},
     }
 </script>
 
@@ -163,6 +153,7 @@
     .users, .controls, .player, .chat, .mixer, .menu
         background: var(--bg)
         border-radius: 4px
+        position: relative
 
     .menu
         grid-area: menu
@@ -171,6 +162,16 @@
         background-size: cover
         display: flex
         gap: 10px
+
+        .logo-wrapper
+            height: 40px
+            padding: 7px
+            background: var(--bg)
+            border-radius: 4px
+
+            .logo
+                height: 100%
+                opacity: 0.5
 
         .spacer
             flex: 1
@@ -201,30 +202,13 @@
             background: var(--bg)
             height: 100%
             position: relative
+            display: grid
+            place-content: center
 
-            .screw
-                height: 4px
-                width: 4px
-                border-radius: 4px
-                background: var(--bg-dark)
-                position: absolute
-                --screw-space: 3px
+            .logo
+                height: 30px
+                opacity: 0.2
 
-                &.screw-top-left
-                    left: var(--screw-space)
-                    top: var(--screw-space)
-
-                &.screw-top-right
-                    right: var(--screw-space)
-                    top: var(--screw-space)
-
-                &.screw-bottom-left
-                    left: var(--screw-space)
-                    bottom: var(--screw-space)
-
-                &.screw-bottom-right
-                    right: var(--screw-space)
-                    bottom: var(--screw-space)
 
     .user
         height: 100%
