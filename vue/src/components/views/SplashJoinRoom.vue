@@ -40,10 +40,16 @@
             socket() {
                 return this.$store.getters.socket
             },
+
+            localAudioContext() {
+                return this.$store.getters.localAudioContext
+            },
         },
 
         methods: {
             joinRoomAs(id, name) {
+                this.localAudioContext.resume()
+
                 this.socket.emit('join.room', {
                     id,
                     name,

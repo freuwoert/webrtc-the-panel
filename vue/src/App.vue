@@ -70,6 +70,8 @@
                     requestAudio: true,
                 })
 
+                this.localAudioContext.resume()
+
                 setTimeout(() => {
                     for (const userId of data.users)
                     {
