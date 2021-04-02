@@ -7,7 +7,8 @@
 </template>
 
 <script>
-    const { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate } = window
+    const { RTCSessionDescription, RTCIceCandidate } = window
+    const RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection;
     import SplashCreateRoom from './components/views/SplashCreateRoom.vue'
     import SplashJoinRoom from './components/views/SplashJoinRoom.vue'
     import ControlPanel from './components/views/ControlPanel.vue'
