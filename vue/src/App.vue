@@ -208,17 +208,39 @@
                     socketId: socketId,
                     videoTrack: null,
                     audioTrack: null,
+                    audioContext: new AudioContext(),
+                    audioSource: null,
+                    audioAnalyzer: null,
+                    audioGainNode: null,
+                    audioDestination: null,
                     connection: new RTCPeerConnection(this.peerConnectionConfig),
                 }
                 
                 peer.connection.ontrack = (e) => {
                     console.log('🔹 track')
+                    console.log(e)
+
                     const remoteVideo = document.getElementById('video_'+socketId)
                     
                     if (!remoteVideo) return
 
                     remoteVideo.srcObject = e.streams[0]
                     remoteVideo.play()
+
+                    peer.audioSource = peer.audioContext.createMediaStreamSource(e.streams[0])
+                    peer.audioAnalyzer = peer.audioContext.createAnalyser()
+                    peer.audioGainNode = peer.audioContext.createGain()
+                    peer.audioDestination = peer.audioContext.createMediaStreamDestination()
+        
+                    peer.audioSource.connect(peer.audioGainNode)
+                    peer.audioGainNode.connect(peer.audioAnalyzer)
+                    peer.audioGainNode.connect(peer.audioDestination)
+                    
+                    peer.audioAnalyzer.fftSize = 32
+                    peer.audioAnalyzer.maxDecibels = 0
+                    peer.audioAnalyzer.minDecibels = -56
+        
+                    peer.audioGainNode.gain.setValueAtTime(1, peer.audioContext.currentTime)
                 }
 
                 peer.connection.onicecandidate = (e) => {

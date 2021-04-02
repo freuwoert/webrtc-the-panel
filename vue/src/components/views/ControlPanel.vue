@@ -41,7 +41,7 @@
         </div>
 
         <div class="mixer">
-            <ui-fader label="Mic - Local" :level="level"></ui-fader>
+            <ui-fader v-for="(level, i) in levels" :key="i" :label="level.label" :level="level.level"></ui-fader>
 
             <div class="spacer">
                 <ui-screws></ui-screws>
@@ -56,19 +56,32 @@
         data() {
             return {
                 level: 0,
+                levels: {
+                    local: { level: 0, label: 'Mic - Local', freq: new Uint8Array(16) },
+                },
             }
         },
 
         mounted() {
             setTimeout(() => {
-                var bufferLength = this.localAudioAnalyzer.frequencyBinCount
-                let t = new Uint8Array(bufferLength)
+                let peers = Array.from(this.peers.values())
+
+                for (let peer of peers)
+                {
+                    this.levels[peer.socketId] = { level: 0, label: 'Mic - Remote', freq: new Uint8Array(16) }
+                }
 
                 setInterval(() => {
-                    this.localAudioAnalyzer.getByteFrequencyData(t)
-                    this.level = (t.reduce((a, c) => a + c) / bufferLength / (this.localAudioAnalyzer.maxDecibels - this.localAudioAnalyzer.minDecibels) * 100)
+                    this.localAudioAnalyzer.getByteFrequencyData(this.levels.local.freq)
+                    this.levels.local.level = (this.levels.local.freq.reduce((a, c) => a + c) / 16 / (this.localAudioAnalyzer.maxDecibels - this.localAudioAnalyzer.minDecibels) * 100)
+
+                    for (let peer of peers)
+                    {
+                        peer.audioAnalyzer.getByteFrequencyData(this.levels[peer.socketId].freq)
+                        this.levels[peer.socketId].level = (this.levels[peer.socketId].freq.reduce((a, c) => a + c) / 16 / (peer.audioAnalyzer.maxDecibels - peer.audioAnalyzer.minDecibels) * 100)
+                    }
                 }, 8)
-            }, 1000)
+            }, 5000)
 
             this.updateVideoDOM('video_local', this.localStream)
         },
