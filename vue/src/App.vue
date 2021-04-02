@@ -37,10 +37,6 @@
         },
 
         async created() {
-            await this.$store.dispatch('setUserMediaInput', {
-                requestAudio: true,
-            })
-
             // this.audioOutput.stream.getAudioTracks().forEach(track => {
             //     this.peerConnection.addTrack(track, this.audioOutput.stream)
             // })
@@ -77,7 +73,7 @@
                             this.connectToPeer(userId)
                         }
                     }
-                }, 2000)
+                }, 6000)
             })
 
             this.socket.on('room.sync', data => {
@@ -129,6 +125,12 @@
 
                 peer.connection.addIceCandidate(new RTCIceCandidate(data.candidate))
                 console.log('🔹 ice candidate')
+            })
+
+
+
+            await this.$store.dispatch('setUserMediaInput', {
+                requestAudio: true,
             })
         },
 
@@ -212,31 +214,29 @@
                     console.log('🔹 track')
                     const remoteVideo = document.getElementById('video_'+socketId)
                     
-                    if (remoteVideo)
-                    {
-                        remoteVideo.srcObject = e.streams[0]
-                        remoteVideo.play()
-                    }
+                    if (!remoteVideo) return
+
+                    remoteVideo.srcObject = e.streams[0]
+                    remoteVideo.play()
                 }
 
                 peer.connection.onicecandidate = (e) => {
-                    if (e.candidate)
-                    {
-                        console.log('🔹 ice candidate')
-                        this.socket.emit('peer.add.candidate', {
-                            candidate: e.candidate,
-                            to: socketId
-                        })
-                    }
-                }
+                    if (!e.candidate) return
 
-                peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.localStream)
+                    console.log('🔹 ice candidate')
+                    this.socket.emit('peer.add.candidate', {
+                        candidate: e.candidate,
+                        to: socketId
+                    })
+                }
 
                 peer.connection.addEventListener('negotiationneeded', () => {
                     console.log('🔸 renegotiation')
                     this.connectToPeer(socketId)
                 }, false)
-                // peer.connection.addTrack(this.localVideoTrack, this.localStream)
+                
+                if (this.localAudioTrack) peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.localStream)
+                if (this.localVideoTrack) peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.localStream)
 
                 this.peers.set(socketId, peer)
 

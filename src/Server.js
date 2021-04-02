@@ -49,6 +49,7 @@ module.exports = class Server {
             socket.emit('client.sync', {
                 overlays: Array.from(this.overlayDict.keys())
             })
+            console.log('hhh')
 
             socket.on('create.room', data => {
                 

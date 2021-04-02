@@ -66,7 +66,7 @@
 
                 setInterval(() => {
                     this.localAudioAnalyzer.getByteFrequencyData(t)
-                    this.level = (t.reduce((a, c) => a + c) / bufferLength / 127 * 100)
+                    this.level = (t.reduce((a, c) => a + c) / bufferLength / (this.localAudioAnalyzer.maxDecibels - this.localAudioAnalyzer.minDecibels) * 100)
                 }, 8)
             }, 1000)
 
@@ -120,14 +120,7 @@
             },
 
             toggleCamera() {
-                if (this.localVideoTrack)
-                {
-                    this.$store.dispatch('turnOffUserCam')
-                }
-                else
-                {
-                    this.$store.dispatch('turnOnUserCam')
-                }
+                this.$store.dispatch(this.localVideoTrack ? 'turnOffUserCam' : 'turnOnUserCam')
             },
 
             updateVideoDOM(id, stream) {
