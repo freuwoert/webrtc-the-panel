@@ -64,7 +64,7 @@
             })
 
             this.socket.on('room.join', data => {
-                this.$store.commit('view', 'room')
+                this.$store.commit('view', 'room')^
 
                 setTimeout(() => {
                     for (const userId of data.users)
@@ -74,7 +74,7 @@
                             this.connectToPeer(userId)
                         }
                     }
-                }, 6000)
+                }, 1000)
             })
 
             this.socket.on('room.sync', data => {
@@ -236,8 +236,8 @@
                     this.connectToPeer(socketId)
                 }, false)
                 
-                if (this.localAudioTrack) peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.localStream)
-                if (this.localVideoTrack) peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.localStream)
+                if (this.localAudioTrack){ peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.localStream); console.log('AUDIO TRACK ADDED')}
+                if (this.localVideoTrack){ peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.localStream); console.log('VIDEO TRACK ADDED')}
 
                 this.peers.set(socketId, peer)
 
