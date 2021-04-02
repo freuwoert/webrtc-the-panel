@@ -7,7 +7,7 @@
             
             <div class="spacer"></div>
 
-            <button class="icon" @click="toggleMute()">{{localAudioTrack.enabled ? '&#983916;' : '&#983917;'}}</button>
+            <!-- <button class="icon" @click="toggleMute()">{{localAudioTrack.enabled ? '&#983916;' : '&#983917;'}}</button> -->
             <button class="icon" @click="toggleCamera()">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
             <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
 

@@ -63,8 +63,12 @@
                 this.$store.commit('overlays', data.overlays)
             })
 
-            this.socket.on('room.join', data => {
-                this.$store.commit('view', 'room')^
+            this.socket.on('room.join', async (data) => {
+                this.$store.commit('view', 'room')
+
+                await this.$store.dispatch('setUserMediaInput', {
+                    requestAudio: true,
+                })
 
                 setTimeout(() => {
                     for (const userId of data.users)
@@ -126,12 +130,6 @@
 
                 peer.connection.addIceCandidate(new RTCIceCandidate(data.candidate))
                 console.log('🔹 ice candidate')
-            })
-
-
-
-            await this.$store.dispatch('setUserMediaInput', {
-                requestAudio: true,
             })
         },
 
