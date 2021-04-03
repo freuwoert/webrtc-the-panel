@@ -41,6 +41,12 @@
         </div>
 
         <div class="mixer">
+            <ui-fader label="Guest Cap" :level="30"></ui-fader>
+
+            <div class="minimal-spacer">
+                <ui-screws></ui-screws>
+            </div>
+
             <ui-fader v-for="(level, i) in levels" :key="i" :label="level.label" :level="level.level"></ui-fader>
 
             <div class="spacer">
@@ -202,6 +208,7 @@
         gap: 4px
         display: flex
 
+        .minimal-spacer,
         .spacer
             flex: 1
             border-radius: 4px
@@ -214,6 +221,10 @@
             .logo
                 height: 30px
                 opacity: 0.2
+
+        .minimal-spacer
+            width: 40px
+            flex: unset
 
 
     .user

@@ -25,6 +25,10 @@
             }
         },
 
+        mounted() {
+            this.createRoomAs(null, 'Maurice')
+        },
+
         computed: {
             overlays() {
                 return this.$store.getters.overlays
