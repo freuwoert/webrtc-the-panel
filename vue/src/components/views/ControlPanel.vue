@@ -90,12 +90,12 @@
                 }, 8)
             }, 5000)
 
-            // this.updateVideoDOM('video_local', this.localStream)
+            this.updateVideoDOM('video_local', this.localStream)
         },
 
         watch: {
             localVideoTrack() {
-                // this.updateVideoDOM('video_local', this.localStream)
+                this.updateVideoDOM('video_local', this.localStream)
             }
         },
 
