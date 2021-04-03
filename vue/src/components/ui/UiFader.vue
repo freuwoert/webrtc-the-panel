@@ -9,7 +9,7 @@
                 <div class="level-bar">
                     <div class="level" :style="'clip-path: inset( calc(100% - '+level+'%) 0 0 0)'"></div>
                 </div>
-                <ui-slider class="slider"></ui-slider>
+                <ui-slider class="slider" :value="uv"></ui-slider>
             </div>
             <div class="text">U</div>
         </div>
@@ -19,7 +19,7 @@
                 <div class="level-bar">
                     <div class="level" :style="'clip-path: inset( calc(100% - '+level+'%) 0 0 0)'"></div>
                 </div>
-                <ui-slider class="slider"></ui-slider>
+                <ui-slider class="slider" :value="ov"></ui-slider>
             </div>
             <div class="text">Ov</div>
         </div>
@@ -47,6 +47,8 @@
 <script>
     export default {
         props: {
+            uv: Number,
+            ov: Number,
             level: Number,
             label: String,
         },

@@ -41,13 +41,14 @@
         </div>
 
         <div class="mixer">
-            <ui-fader label="Guest Cap" :level="30"></ui-fader>
+            <ui-fader label="User Cap" :level="0" :uv="100" :ov="100"></ui-fader>
+            <ui-fader label="Guest Cap" :level="0" :uv="100" :ov="100"></ui-fader>
 
             <div class="minimal-spacer">
                 <ui-screws></ui-screws>
             </div>
 
-            <ui-fader v-for="(level, i) in levels" :key="i" :label="level.label" :level="level.level"></ui-fader>
+            <ui-fader v-for="(channel, i) in channels" :key="i" :label="channel.label" :level="channel.level" :uv="channel.vol" :ov="channel.overlayVol"></ui-fader>
 
             <div class="spacer">
                 <ui-screws></ui-screws>
@@ -62,8 +63,8 @@
         data() {
             return {
                 level: 0,
-                levels: {
-                    local: { level: 0, label: 'Mic - Local', freq: new Uint8Array(16) },
+                channels: {
+                    local: { level: 0, vol: 100, overlayVol: 100, label: 'Local', freq: new Uint8Array(16) },
                 },
             }
         },
@@ -74,27 +75,27 @@
 
                 for (let peer of peers)
                 {
-                    this.levels[peer.socketId] = { level: 0, label: 'Mic - Remote', freq: new Uint8Array(16) }
+                    this.channels[peer.socketId] = { level: 0, label: 'Remote', freq: new Uint8Array(16) }
                 }
 
                 setInterval(() => {
-                    this.localAudioAnalyzer.getByteFrequencyData(this.levels.local.freq)
-                    this.levels.local.level = (this.levels.local.freq.reduce((a, c) => a + c) / 16 / (this.localAudioAnalyzer.maxDecibels - this.localAudioAnalyzer.minDecibels) * 100)
+                    this.localAudioAnalyzer.getByteFrequencyData(this.channels.local.freq)
+                    this.channels.local.level = (this.channels.local.freq.reduce((a, c) => a + c) / 16 / (this.localAudioAnalyzer.maxDecibels - this.localAudioAnalyzer.minDecibels) * 100)
 
                     for (let peer of peers)
                     {
-                        peer.audioAnalyzer.getByteFrequencyData(this.levels[peer.socketId].freq)
-                        this.levels[peer.socketId].level = (this.levels[peer.socketId].freq.reduce((a, c) => a + c) / 16 / (peer.audioAnalyzer.maxDecibels - peer.audioAnalyzer.minDecibels) * 100)
+                        peer.audioAnalyzer.getByteFrequencyData(this.channels[peer.socketId].freq)
+                        this.channels[peer.socketId].level = (this.channels[peer.socketId].freq.reduce((a, c) => a + c) / 16 / (peer.audioAnalyzer.maxDecibels - peer.audioAnalyzer.minDecibels) * 100)
                     }
                 }, 8)
             }, 5000)
 
-            this.updateVideoDOM('video_local', this.localStream)
+            // this.updateVideoDOM('video_local', this.localStream)
         },
 
         watch: {
             localVideoTrack() {
-                this.updateVideoDOM('video_local', this.localStream)
+                // this.updateVideoDOM('video_local', this.localStream)
             }
         },
 

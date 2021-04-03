@@ -53,7 +53,11 @@ module.exports = class Server {
             socket.on('create.room', data => {
                 
                 let room = new Room()
-                room.users.push(new User(socket.id, data.name))
+                let user = new User(socket.id, data.name)
+
+                user.isOwner = true
+
+                room.users.set(socket.id, user)
                 room.owner = socket.id
 
                 this.roomDict.set(room.id, room)
@@ -62,27 +66,27 @@ module.exports = class Server {
                 socket.join(room.id)
 
                 socket.emit('room.join', {
-                    users: room.users.map(e => e.id)
+                    users: Array.from(room.users.keys())
                 })
 
                 this.io.to(room.id).emit('room.sync', {
-                    room,
+                    room: {...room, users: Array.from(room.users.values())},
                 })
             })
 
             socket.on('join.room', data => {
                 let room = this.roomDict.get(data.id)
 
-                room.users.push(new User(socket.id, data.name))
+                room.users.set(socket.id, new User(socket.id, data.name))
 
                 socket.join(room.id)
 
                 socket.emit('room.join', {
-                    users: room.users.map(e => e.id)
+                    users: Array.from(room.users.keys())
                 })
 
                 this.io.to(room.id).emit('room.sync', {
-                    room,
+                    room: {...room, users: Array.from(room.users.values())},
                 })
             })
 
@@ -112,8 +116,6 @@ module.exports = class Server {
             })
 
             socket.on('peer.add.candidate', data => {
-                console.log('got candidate from: '+socket.id+' to '+data.to)
-                
                 socket.to(data.to).emit('peer.add.candidate', {
                     candidate: data.candidate,
                     from: socket.id,
@@ -124,13 +126,17 @@ module.exports = class Server {
 
             socket.on('disconnecting', () => {
                 let rooms = Array.from(socket.rooms.values())
+
+                // First item is always the socket id...
+                // With a shift we get rid of it
                 rooms.shift()
 
                 for (const roomId of rooms)
                 {
                     let room = this.roomDict.get(roomId)
 
-                    room.users.splice(room.users.findIndex(e => e.id === roomId), 1)
+                    room.users.delete(socket.id)
+
                     this.io.to(roomId).emit('room.user.left', {
                         userId: socket.id,
                     })

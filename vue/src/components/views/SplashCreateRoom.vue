@@ -26,7 +26,7 @@
         },
 
         mounted() {
-            this.createRoomAs(null, 'Maurice')
+            // this.createRoomAs(null, 'Maurice')
         },
 
         computed: {

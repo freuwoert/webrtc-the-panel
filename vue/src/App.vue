@@ -84,6 +84,7 @@
             })
 
             this.socket.on('room.sync', data => {
+                console.log(data)
                 this.$store.commit('room', data.room)
             })
 
