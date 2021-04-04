@@ -9,7 +9,7 @@
                 <div class="level-bar">
                     <div class="level" :style="'clip-path: inset( calc(100% - '+level+'%) 0 0 0)'"></div>
                 </div>
-                <ui-slider class="slider" :value="uv"></ui-slider>
+                <ui-slider class="slider" :value="uv" @input="$emit('uv', $event)"></ui-slider>
             </div>
             <div class="text">U</div>
         </div>
@@ -19,7 +19,7 @@
                 <div class="level-bar">
                     <div class="level" :style="'clip-path: inset( calc(100% - '+level+'%) 0 0 0)'"></div>
                 </div>
-                <ui-slider class="slider" :value="ov"></ui-slider>
+                <ui-slider class="slider" :value="ov" @input="$emit('ov', $event)"></ui-slider>
             </div>
             <div class="text">Ov</div>
         </div>

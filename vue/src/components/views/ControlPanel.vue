@@ -15,7 +15,7 @@
         </div>
 
         <div class="users">
-            <div class="user" v-for="(user, i) in room.users" :key="i">
+            <div class="user" v-for="(user, i) in Array.from(room.users.values())" :key="i">
                 <span class="name">
                     {{user.name}}
                     <span v-if="user.id === socket.id">(you)</span>
@@ -48,7 +48,7 @@
                 <ui-screws></ui-screws>
             </div>
 
-            <ui-fader v-for="(channel, i) in channels" :key="i" :label="channel.label" :level="channel.level" :uv="channel.vol" :ov="channel.overlayVol"></ui-fader>
+            <ui-fader v-for="user in Array.from(room.users.values())" :key="user.id" :label="user.name" :level="user.level" :uv="user.vol" @uv="user.vol = $event" :ov="user.overlayVol"></ui-fader>
 
             <div class="spacer">
                 <ui-screws></ui-screws>
@@ -64,7 +64,7 @@
             return {
                 level: 0,
                 channels: {
-                    local: { level: 0, vol: 100, overlayVol: 100, label: 'Local', freq: new Uint8Array(16) },
+                    local: { id: 'local', level: 0, vol: 100, overlayVol: 100, label: 'Local', freq: new Uint8Array(16) },
                 },
             }
         },
@@ -87,7 +87,7 @@
                         peer.audioAnalyzer.getByteFrequencyData(this.channels[peer.socketId].freq)
                         this.channels[peer.socketId].level = (this.channels[peer.socketId].freq.reduce((a, c) => a + c) / 16 / (peer.audioAnalyzer.maxDecibels - peer.audioAnalyzer.minDecibels) * 100)
                     }
-                }, 8)
+                }, 80000)
             }, 5000)
 
             this.updateVideoDOM('video_local', this.localStream)
@@ -145,7 +145,7 @@
 
             updateVideoDOM(id, stream) {
                 document.getElementById(id).srcObject = stream
-            }
+            },
         },
 
         components: {},

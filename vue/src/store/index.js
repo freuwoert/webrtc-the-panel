@@ -154,12 +154,12 @@ export default new Vuex.Store({
                 requestVideo: true,
             })
             
-            let peers = Array.from(state.getters.peers.values())
+            let users = Array.from(state.getters.room.users.values())
 
-            for (let peer of peers)
+            for (let user of users)
             {
-                peer.audioTrack = peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
-                peer.videoTrack = peer.connection.addTrack(state.getters.localVideoTrack, state.getters.localStream)
+                user.peer.audioTrack = user.peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
+                user.peer.videoTrack = user.peer.connection.addTrack(state.getters.localVideoTrack, state.getters.localStream)
             }
         },
 
@@ -169,12 +169,12 @@ export default new Vuex.Store({
                 requestVideo: false,
             })
             
-            let peers = Array.from(state.getters.peers.values())
+            let users = Array.from(state.getters.room.users.values())
             
-            for (let peer of peers)
+            for (let user of users)
             {
-                peer.audioTrack = peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
-                peer.videoTrack = peer.connection.removeTrack(peer.videoTrack) || null
+                user.peer.audioTrack = user.peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
+                user.peer.videoTrack = user.peer.connection.removeTrack(user.peer.videoTrack) || null
             }
         },
     },
@@ -223,7 +223,7 @@ export default new Vuex.Store({
         },
 
         removeUserFromRoom(state, data) {
-            state.room.users.splice(state.room.users.findIndex(e => e.id === data), 1)
+            state.room.users.delete(data)
         },
 
         overlays(state, data) {

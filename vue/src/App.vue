@@ -48,7 +48,7 @@
 
             this.socket.on("join-request-answer", async data => {
                 console.log('🔹 answer')
-                let peer = this.peers.get(data.from)
+                let peer = this.getPeerOrNull(data.from)
 
                 if (!peer) return
                 
@@ -63,29 +63,41 @@
                 this.$store.commit('overlays', data.overlays)
             })
 
-            this.socket.on('room.join', async (data) => {
+            this.socket.on('room.join', async () => {
                 this.$store.commit('view', 'room')
 
                 await this.$store.dispatch('setUserMediaInput', {
                     requestAudio: true,
                 })
 
-                this.localAudioContext.resume()
-
                 setTimeout(() => {
-                    for (const userId of data.users)
+                    for (const user of Array.from(this.room.users.values()))
                     {
-                        if (userId !== this.socket.id)
+                        if (!user.isSelf)
                         {
-                            this.connectToPeer(userId)
+                            this.connectToPeer(user.id)
                         }
                     }
                 }, 1000)
+
+                this.localAudioContext.resume()
             })
 
-            this.socket.on('room.sync', data => {
-                console.log(data)
-                this.$store.commit('room', data.room)
+            this.socket.on('room.sync', async (data) => {
+                let users = new Map
+
+                for (let user of data.room.users)
+                {
+                    if(user.id === this.socket.id)
+                    {
+                        user.isSelf = true
+                        user.freq = new Uint8Array(16)
+                    }
+                    
+                    users.set(user.id, user)
+                }
+                
+                this.$store.commit('room', {...data.room, users})
             })
 
             this.socket.on('room.user.left', data => {
@@ -183,30 +195,44 @@
         },
 
         methods: {
-            async connectToPeer(socketId) {
-                let peer = await this.getOrCreatePeer(socketId)
+            async connectToPeer(id) {
+                let peer = await this.getOrCreatePeer(id)
                 
                 let offer = await peer.connection.createOffer()
                 await peer.connection.setLocalDescription(new RTCSessionDescription(offer))
 
                 this.socket.emit('join-request-offer', {
                     offer,
-                    to: socketId
+                    to: id
                 })
             },
 
-            getPeerOrNull(socketId) {
-                return this.peers.get(socketId) || null
-            },
+            getPeerOrNull(id) {
+                let user = this.room.users.get(id)
 
-            async getOrCreatePeer(socketId) {
-                if (this.peers.get(socketId))
+                if (!user)
                 {
-                    return this.peers.get(socketId)
+                    return null
                 }
 
-                let peer = {
-                    socketId: socketId,
+                return user.peer
+            },
+
+            async getOrCreatePeer(id) {
+                let user = this.room.users.get(id)
+
+                if (!user)
+                {
+                    return
+                }
+
+                if (user.peer)
+                {
+                    return user.peer
+                }
+
+                user.peer = {
+                    id: id,
                     videoTrack: null,
                     audioTrack: null,
                     audioContext: new AudioContext(),
@@ -217,54 +243,49 @@
                     connection: new RTCPeerConnection(this.peerConnectionConfig),
                 }
                 
-                peer.connection.ontrack = (e) => {
-                    console.log('🔹 track')
-                    console.log(e)
-
-                    const remoteVideo = document.getElementById('video_'+socketId)
+                user.peer.connection.ontrack = (e) => {
+                    const remoteVideo = document.getElementById('video_'+id)
                     
                     if (!remoteVideo) return
 
                     remoteVideo.srcObject = e.streams[0]
                     remoteVideo.play()
 
-                    peer.audioSource = peer.audioContext.createMediaStreamSource(e.streams[0])
-                    peer.audioAnalyzer = peer.audioContext.createAnalyser()
-                    peer.audioGainNode = peer.audioContext.createGain()
-                    peer.audioDestination = peer.audioContext.createMediaStreamDestination()
+                    user.peer.audioSource = user.peer.audioContext.createMediaStreamSource(e.streams[0])
+                    user.peer.audioAnalyzer = user.peer.audioContext.createAnalyser()
+                    user.peer.audioGainNode = user.peer.audioContext.createGain()
+                    user.peer.audioDestination = user.peer.audioContext.createMediaStreamDestination()
         
-                    peer.audioSource.connect(peer.audioGainNode)
-                    peer.audioGainNode.connect(peer.audioAnalyzer)
-                    peer.audioGainNode.connect(peer.audioDestination)
+                    user.peer.audioSource.connect(user.peer.audioGainNode)
+                    user.peer.audioGainNode.connect(user.peer.audioAnalyzer)
+                    user.peer.audioGainNode.connect(user.peer.audioDestination)
                     
-                    peer.audioAnalyzer.fftSize = 32
-                    peer.audioAnalyzer.maxDecibels = 0
-                    peer.audioAnalyzer.minDecibels = -56
+                    user.peer.audioAnalyzer.fftSize = 32
+                    user.peer.audioAnalyzer.maxDecibels = 0
+                    user.peer.audioAnalyzer.minDecibels = -56
         
-                    peer.audioGainNode.gain.setValueAtTime(1, peer.audioContext.currentTime)
+                    user.peer.audioGainNode.gain.setValueAtTime(1, user.peer.audioContext.currentTime)
                 }
 
-                peer.connection.onicecandidate = (e) => {
+                user.peer.connection.onicecandidate = (e) => {
                     if (!e.candidate) return
 
                     console.log('🔹 ice candidate')
                     this.socket.emit('peer.add.candidate', {
                         candidate: e.candidate,
-                        to: socketId
+                        to: id
                     })
                 }
 
-                peer.connection.addEventListener('negotiationneeded', () => {
+                user.peer.connection.addEventListener('negotiationneeded', () => {
                     console.log('🔸 renegotiation')
-                    this.connectToPeer(socketId)
+                    this.connectToPeer(id)
                 }, false)
                 
-                if (this.localAudioTrack){ peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.localStream); console.log('AUDIO TRACK ADDED')}
-                if (this.localVideoTrack){ peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.localStream); console.log('VIDEO TRACK ADDED')}
+                if (this.localAudioTrack){ user.peer.audioTrack = user.peer.connection.addTrack(this.localAudioTrack, this.localStream); console.log('AUDIO TRACK ADDED')}
+                if (this.localVideoTrack){ user.peer.videoTrack = user.peer.connection.addTrack(this.localVideoTrack, this.localStream); console.log('VIDEO TRACK ADDED')}
 
-                this.peers.set(socketId, peer)
-
-                return peer
+                return user.peer
             },
 
 

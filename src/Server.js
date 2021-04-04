@@ -56,6 +56,7 @@ module.exports = class Server {
                 let user = new User(socket.id, data.name)
 
                 user.isOwner = true
+                user.isModerator = true
 
                 room.users.set(socket.id, user)
                 room.owner = socket.id
