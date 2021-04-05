@@ -57,47 +57,43 @@
 
 
 
-
-
             this.socket.on('client.sync', data => {
                 this.$store.commit('overlays', data.overlays)
             })
 
-            this.socket.on('room.join', async () => {
-                this.$store.commit('view', 'room')
 
-                await this.$store.dispatch('setUserMediaInput', {
-                    requestAudio: true,
-                })
 
-                setTimeout(() => {
-                    for (const user of Array.from(this.room.users.values()))
-                    {
-                        if (!user.isSelf)
-                        {
-                            this.connectToPeer(user.id)
-                        }
-                    }
-                }, 1000)
-
-                this.localAudioContext.resume()
+            this.socket.on('room.user.joined', async (data) => {
+                this.$store.commit('addUser', data.user)
             })
 
-            this.socket.on('room.sync', async (data) => {
-                let users = new Map
+            this.socket.on('room.self.joined', async (data) => {
+                let users = []
 
                 for (let user of data.room.users)
                 {
                     if(user.id === this.socket.id)
                     {
                         user.isSelf = true
-                        user.freq = new Uint8Array(16)
                     }
                     
-                    users.set(user.id, user)
+                    users.push(user)
                 }
                 
+                this.$store.commit('view', 'room')
                 this.$store.commit('room', {...data.room, users})
+
+                await this.$store.dispatch('setUserMediaInput', {
+                    requestAudio: true,
+                })
+
+                for (const user of this.room.users)
+                {
+                    if (!user.isSelf)
+                    {
+                        this.connectToPeer(user.id)
+                    }
+                }
             })
 
             this.socket.on('room.user.left', data => {
@@ -157,10 +153,6 @@
                 return this.$store.getters.room
             },
 
-            peers() {
-                return this.$store.getters.peers
-            },
-
             socket() {
                 return this.$store.getters.socket
             },
@@ -175,22 +167,6 @@
 
             localVideoTrack() {
                 return this.$store.getters.localVideoTrack
-            },
-
-            localAudioContext() {
-                return this.$store.getters.localAudioContext
-            },
-
-            localAudioSource() {
-                return this.$store.getters.localAudioSource
-            },
-
-            localAudioGainNode() {
-                return this.$store.getters.localAudioGainNode
-            },
-
-            localAudioDestination() {
-                return this.$store.getters.localAudioDestination
             },
         },
 
@@ -208,7 +184,7 @@
             },
 
             getPeerOrNull(id) {
-                let user = this.room.users.get(id)
+                let user = this.room.users.find(e => e.id === id)
 
                 if (!user)
                 {
@@ -219,31 +195,39 @@
             },
 
             async getOrCreatePeer(id) {
-                let user = this.room.users.get(id)
+                let userIndex = this.room.users.findIndex(e => e.id === id)
 
-                if (!user)
+                if (userIndex < 0)
                 {
                     return
                 }
 
-                if (user.peer)
+                if (this.room.users[userIndex].peer)
                 {
-                    return user.peer
+                    return this.room.users[userIndex].peer
                 }
 
-                user.peer = {
-                    id: id,
-                    videoTrack: null,
-                    audioTrack: null,
+                let audio = {
+                    volume: 100,
+                    overlayVolume: 100,
+                    level: 0,
+                    freq: new Uint8Array(16),
                     audioContext: new AudioContext(),
                     audioSource: null,
                     audioAnalyzer: null,
                     audioGainNode: null,
                     audioDestination: null,
+                }
+
+                let peer = {
+                    id: id,
+                    videoTrack: null,
+                    audioTrack: null,
                     connection: new RTCPeerConnection(this.peerConnectionConfig),
                 }
                 
-                user.peer.connection.ontrack = (e) => {
+                peer.connection.ontrack = (e) => {
+                    console.log('sfdfdsfsd')
                     const remoteVideo = document.getElementById('video_'+id)
                     
                     if (!remoteVideo) return
@@ -251,23 +235,30 @@
                     remoteVideo.srcObject = e.streams[0]
                     remoteVideo.play()
 
-                    user.peer.audioSource = user.peer.audioContext.createMediaStreamSource(e.streams[0])
-                    user.peer.audioAnalyzer = user.peer.audioContext.createAnalyser()
-                    user.peer.audioGainNode = user.peer.audioContext.createGain()
-                    user.peer.audioDestination = user.peer.audioContext.createMediaStreamDestination()
+                    let selfUser = () => {
+                        return this.room.users.find(e => e.id === id)
+                    }
+
+                    console.log(id)
+
+
+                    this.$store.commit('setUserAudio', {id, data: {audioSource: selfUser().audio.audioContext.createMediaStreamSource(e.streams[0])}})
+                    this.$store.commit('setUserAudio', {id, data: {audioAnalyzer: selfUser().audio.audioContext.createAnalyser()}})
+                    this.$store.commit('setUserAudio', {id, data: {audioGainNode: selfUser().audio.audioContext.createGain()}})
+                    this.$store.commit('setUserAudio', {id, data: {audioDestination: selfUser().audio.audioContext.createMediaStreamDestination()}})
         
-                    user.peer.audioSource.connect(user.peer.audioGainNode)
-                    user.peer.audioGainNode.connect(user.peer.audioAnalyzer)
-                    user.peer.audioGainNode.connect(user.peer.audioDestination)
+                    selfUser().audio.audioSource.connect(selfUser().audio.audioGainNode)
+                    selfUser().audio.audioGainNode.connect(selfUser().audio.audioAnalyzer)
+                    selfUser().audio.audioGainNode.connect(selfUser().audio.audioDestination)
                     
-                    user.peer.audioAnalyzer.fftSize = 32
-                    user.peer.audioAnalyzer.maxDecibels = 0
-                    user.peer.audioAnalyzer.minDecibels = -56
+                    selfUser().audio.audioAnalyzer.fftSize = 32
+                    selfUser().audio.audioAnalyzer.maxDecibels = 0
+                    selfUser().audio.audioAnalyzer.minDecibels = -56
         
-                    user.peer.audioGainNode.gain.setValueAtTime(1, user.peer.audioContext.currentTime)
+                    selfUser().audio.audioGainNode.gain.setValueAtTime(1, selfUser().audio.audioContext.currentTime)
                 }
 
-                user.peer.connection.onicecandidate = (e) => {
+                peer.connection.onicecandidate = (e) => {
                     if (!e.candidate) return
 
                     console.log('🔹 ice candidate')
@@ -277,15 +268,17 @@
                     })
                 }
 
-                user.peer.connection.addEventListener('negotiationneeded', () => {
+                peer.connection.addEventListener('negotiationneeded', () => {
                     console.log('🔸 renegotiation')
                     this.connectToPeer(id)
                 }, false)
                 
-                if (this.localAudioTrack){ user.peer.audioTrack = user.peer.connection.addTrack(this.localAudioTrack, this.localStream); console.log('AUDIO TRACK ADDED')}
-                if (this.localVideoTrack){ user.peer.videoTrack = user.peer.connection.addTrack(this.localVideoTrack, this.localStream); console.log('VIDEO TRACK ADDED')}
+                if (this.localAudioTrack){ peer.audioTrack = peer.connection.addTrack(this.localAudioTrack, this.localStream)}
+                if (this.localVideoTrack){ peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.localStream)}
 
-                return user.peer
+                this.$store.commit('setUser', { id, data: {peer, audio} })
+
+                return peer
             },
 
 

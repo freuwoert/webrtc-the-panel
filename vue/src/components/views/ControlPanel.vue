@@ -15,7 +15,7 @@
         </div>
 
         <div class="users">
-            <div class="user" v-for="(user, i) in Array.from(room.users.values())" :key="i">
+            <div class="user" v-for="user in room.users" :key="user.id">
                 <span class="name">
                     {{user.name}}
                     <span v-if="user.id === socket.id">(you)</span>
@@ -48,7 +48,7 @@
                 <ui-screws></ui-screws>
             </div>
 
-            <ui-fader v-for="user in Array.from(room.users.values())" :key="user.id" :label="user.name" :level="user.level" :uv="user.vol" @uv="user.vol = $event" :ov="user.overlayVol"></ui-fader>
+            <ui-fader v-for="user in room.users" :key="user.id" :label="user.id !== socket.id ? user.name : 'Local'" :level="levels[user.id]" :uv="user.audio.volume" :ov="user.audio.overlayVolume"></ui-fader>
 
             <div class="spacer">
                 <ui-screws></ui-screws>
@@ -62,33 +62,22 @@
     export default {
         data() {
             return {
-                level: 0,
-                channels: {
-                    local: { id: 'local', level: 0, vol: 100, overlayVol: 100, label: 'Local', freq: new Uint8Array(16) },
-                },
+                levels: {},
             }
         },
 
         mounted() {
-            setTimeout(() => {
-                let peers = Array.from(this.peers.values())
-
-                for (let peer of peers)
+            setInterval(() => {
+                for (let user of this.room.users)
                 {
-                    this.channels[peer.socketId] = { level: 0, label: 'Remote', freq: new Uint8Array(16) }
+                    if (!user.audio.audioAnalyzer) continue
+
+                    user.audio.audioAnalyzer.getByteFrequencyData(user.audio.freq)
+                    let level = (user.audio.freq.reduce((a, c) => a + c) / 16 / (user.audio.audioAnalyzer.maxDecibels - user.audio.audioAnalyzer.minDecibels) * 100)
+                    this.levels[user.id] = level
+                    this.$forceUpdate()
                 }
-
-                setInterval(() => {
-                    this.localAudioAnalyzer.getByteFrequencyData(this.channels.local.freq)
-                    this.channels.local.level = (this.channels.local.freq.reduce((a, c) => a + c) / 16 / (this.localAudioAnalyzer.maxDecibels - this.localAudioAnalyzer.minDecibels) * 100)
-
-                    for (let peer of peers)
-                    {
-                        peer.audioAnalyzer.getByteFrequencyData(this.channels[peer.socketId].freq)
-                        this.channels[peer.socketId].level = (this.channels[peer.socketId].freq.reduce((a, c) => a + c) / 16 / (peer.audioAnalyzer.maxDecibels - peer.audioAnalyzer.minDecibels) * 100)
-                    }
-                }, 80000)
-            }, 5000)
+            }, 8)
 
             this.updateVideoDOM('video_local', this.localStream)
         },
@@ -108,10 +97,6 @@
                 return this.$store.getters.socket
             },
 
-            peers() {
-                return this.$store.getters.peers
-            },
-
             localStream() {
                 return this.$store.getters.localStream
             },
@@ -122,14 +107,6 @@
 
             localVideoTrack() {
                 return this.$store.getters.localVideoTrack
-            },
-
-            localAudioContext() {
-                return this.$store.getters.localAudioContext
-            },
-
-            localAudioAnalyzer() {
-                return this.$store.getters.localAudioAnalyzer
             },
         },
 

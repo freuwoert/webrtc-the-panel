@@ -37,15 +37,10 @@
             socket() {
                 return this.$store.getters.socket
             },
-
-            localAudioContext() {
-                return this.$store.getters.localAudioContext
-            },
         },
 
         methods: {
             createRoomAs(id, name) {
-                this.localAudioContext.resume()
                 
                 this.socket.emit('create.room', {
                     id,

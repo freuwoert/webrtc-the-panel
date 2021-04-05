@@ -66,28 +66,25 @@ module.exports = class Server {
 
                 socket.join(room.id)
 
-                socket.emit('room.join', {
-                    users: Array.from(room.users.keys())
-                })
-
-                this.io.to(room.id).emit('room.sync', {
+                socket.emit('room.self.joined', {
                     room: {...room, users: Array.from(room.users.values())},
                 })
             })
 
             socket.on('join.room', data => {
                 let room = this.roomDict.get(data.id)
+                let user = new User(socket.id, data.name)
 
-                room.users.set(socket.id, new User(socket.id, data.name))
+                room.users.set(socket.id, user)
 
                 socket.join(room.id)
 
-                socket.emit('room.join', {
-                    users: Array.from(room.users.keys())
+                socket.emit('room.self.joined', {
+                    room: {...room, users: Array.from(room.users.values())},
                 })
 
-                this.io.to(room.id).emit('room.sync', {
-                    room: {...room, users: Array.from(room.users.values())},
+                socket.broadcast.to(room.id).emit('room.user.joined', {
+                    user
                 })
             })
 

@@ -8,10 +8,17 @@ module.exports = class User
         this.isModerator = false
         this.isStreamer = false
         this.isOwner = false
-        this.volume = 100
-        this.overlayVolume = 100
-        this.level = 0
-        this.freq = null
+        this.audio = {
+            volume: 100,
+            overlayVolume: 100,
+            level: 0,
+            freq: null,
+            audioContext: null,
+            audioSource: null,
+            audioAnalyzer: null,
+            audioGainNode: null,
+            audioDestination: null,
+        }
         this.peer = null
     }
 }
