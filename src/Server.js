@@ -96,6 +96,18 @@ module.exports = class Server {
                     roomExists: room ? true : false,
                 })
             })
+
+            socket.on('room.user.set-volume', data => {
+                let roomIds = this.getRoomIdsFromSocket(socket)
+
+                for (const roomId of roomIds)
+                {
+                    socket.broadcast.to(roomId).emit('room.user.set-volume', {
+                        user: data.userId,
+                        volume: data.volume,
+                    })
+                }
+            })
             
 
 
@@ -123,13 +135,9 @@ module.exports = class Server {
 
 
             socket.on('disconnecting', () => {
-                let rooms = Array.from(socket.rooms.values())
+                let roomIds = this.getRoomIdsFromSocket(socket)
 
-                // First item is always the socket id...
-                // With a shift we get rid of it
-                rooms.shift()
-
-                for (const roomId of rooms)
+                for (const roomId of roomIds)
                 {
                     let room = this.roomDict.get(roomId)
 
@@ -138,9 +146,33 @@ module.exports = class Server {
                     this.io.to(roomId).emit('room.user.left', {
                         userId: socket.id,
                     })
+
+                    // Remove room if empty
+                    if (room.users.size == 0)
+                    {
+                        let overlayDict = Array.from(this.overlayDict.entries())
+                        
+                        // returns array with exactly one entry containing an array with two entries
+                        // (key and value from the original map)
+                        let currentOverlayIdFromRoom = overlayDict.filter(e => e[1] === room.id)[0][0]
+                        
+                        this.overlayDict.set(currentOverlayIdFromRoom, null)
+
+                        this.roomDict.delete(room.id)
+                    }
                 }
             })
         })
+    }
+
+    getRoomIdsFromSocket(socket) {
+        let roomIds = Array.from(socket.rooms.values())
+    
+        // First item is always the socket id...
+        // With a shift we get rid of it
+        roomIds.shift()
+
+        return RoomIds
     }
 
     configureApp() {
