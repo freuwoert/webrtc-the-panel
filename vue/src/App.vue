@@ -100,6 +100,11 @@
                 this.$store.commit('removeUserFromRoom', data.userId)
             })
 
+            this.socket.on('room.user.set-volume', data => {
+                console.log(data)
+                // this.$store.commit('removeUserFromRoom', data.userId)
+            })
+
 
 
             if (this.url.roomId)

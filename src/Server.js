@@ -172,7 +172,7 @@ module.exports = class Server {
         // With a shift we get rid of it
         roomIds.shift()
 
-        return RoomIds
+        return roomIds
     }
 
     configureApp() {

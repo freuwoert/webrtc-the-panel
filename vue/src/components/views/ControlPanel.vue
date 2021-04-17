@@ -48,7 +48,7 @@
                 <ui-screws></ui-screws>
             </div>
 
-            <ui-fader v-for="user in room.users" :key="user.id" :label="user.id !== socket.id ? user.name : 'Local'" :level="levels[user.id]" :uv="user.audio.volume" :ov="user.audio.overlayVolume"></ui-fader>
+            <ui-fader v-for="user in room.users" :key="user.id" :label="user.id !== socket.id ? user.name : 'Local'" :level="levels[user.id]" :uv="user.audio.volume" @uv="setUserVolume(user, $event)" :ov="user.audio.overlayVolume"></ui-fader>
 
             <div class="spacer">
                 <ui-screws></ui-screws>
@@ -123,6 +123,10 @@
             updateVideoDOM(id, stream) {
                 document.getElementById(id).srcObject = stream
             },
+
+            setUserVolume(user, volume) {
+                console.log(user.id, volume)
+            }
         },
 
         components: {},
