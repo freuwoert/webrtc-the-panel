@@ -101,8 +101,12 @@
             })
 
             this.socket.on('room.user.set-volume', data => {
-                console.log(data)
-                // this.$store.commit('removeUserFromRoom', data.userId)
+                this.$store.commit('setUserAudio', {
+                    id: data.user,
+                    data: {
+                        volume: data.volume
+                    },
+                })
             })
 
 

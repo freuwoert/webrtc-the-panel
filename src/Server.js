@@ -102,6 +102,13 @@ module.exports = class Server {
 
                 for (const roomId of roomIds)
                 {
+                    let room = this.roomDict.get(roomId)
+                    let user = room.users.get(data.userId)
+
+                    user.audio.volume = data.volume
+
+                    console.log(user.id)
+
                     socket.broadcast.to(roomId).emit('room.user.set-volume', {
                         user: data.userId,
                         volume: data.volume,

@@ -125,7 +125,10 @@
             },
 
             setUserVolume(user, volume) {
-                console.log(user.id, volume)
+                this.socket.emit('room.user.set-volume', {
+                    userId: user.id,
+                    volume,
+                })
             }
         },
 
