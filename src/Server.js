@@ -113,6 +113,23 @@ module.exports = class Server {
                     })
                 }
             })
+
+            socket.on('room.user.set-mute', data => {
+                let roomIds = this.getRoomIdsFromSocket(socket)
+
+                for (const roomId of roomIds)
+                {
+                    let room = this.roomDict.get(roomId)
+                    let user = room.users.get(data.userId)
+
+                    user.audio.isMuted = data.isMuted
+
+                    this.io.to(roomId).emit('room.user.set-mute', {
+                        user: data.userId,
+                        isMuted: data.isMuted,
+                    })
+                }
+            })
             
 
 

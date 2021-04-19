@@ -115,6 +115,15 @@
                 }
             })
 
+            this.socket.on('room.user.set-mute', data => {
+                this.$store.commit('setUserAudio', {
+                    id: data.user,
+                    data: {
+                        isMuted: data.isMuted
+                    },
+                })
+            })
+
 
 
             if (this.url.roomId)

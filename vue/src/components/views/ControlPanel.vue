@@ -18,12 +18,16 @@
 
         <div class="users">
             <div class="user" v-for="user in room.users" :key="user.id">
-                <span class="name">
+                <span class="name" :title="user.name">
                     {{user.name}}
                     <span v-if="user.isSelf"> (you)</span>
-                    <span class="icon moderator" title="Room moderator" v-if="user.isModerator">&#985231;</span>
-                    <span class="icon owner" title="Room owner" v-if="user.isOwner">&#983461;</span>
                 </span>
+
+                <div class="indicators">
+                    <span class="icon moderator" title="Room moderator" v-if="user.isModerator">&#984421;</span>
+                    <span class="icon owner" title="Room owner" v-if="user.isOwner">&#983461;</span>
+                    <span class="icon muted" title="User is muted" v-if="user.audio.isMuted">&#983917;</span>
+                </div>
 
                 <video v-if="!user.isSelf" autoplay muted class="video" :id="'video_'+user.id"></video>
                 <audio v-if="!user.isSelf" autoplay class="audio" :id="'audio_'+user.id"></audio>
@@ -45,6 +49,7 @@
         </div>
 
         <div class="chat">
+            <input placeholder="Message Chat" type="text" class="chat-bar">
             <ui-screws></ui-screws>
         </div>
 
@@ -153,7 +158,7 @@
         width: 100%
         height: 100%
         display: grid
-        grid-template-columns: 350px 1fr 350px
+        grid-template-columns: 400px 1fr 400px
         grid-template-rows: 60px 150px 1fr 350px
         grid-template-areas: "menu menu menu" "users users users" "controls player chat" "mixer mixer mixer"
         padding: 3px
@@ -202,6 +207,18 @@
 
     .chat
         grid-area: chat
+        position: relative
+
+        .chat-bar
+            height: 46px
+            border-radius: 5px
+            width: calc(100% - 20px)
+            background: var(--bg-dark)
+            color: #fff
+            position: absolute
+            bottom: 10px
+            left: 10px
+            letter-spacing: 0.3px
 
     .mixer
         grid-area: mixer
@@ -235,13 +252,17 @@
         vertical-align: top
         display: inline-block
         margin-left: 10px
+        border-radius: 5px
+        overflow: hidden
+
+        #video_local
+            transform: scaleX(-1)
 
         .video
             height: 100%
             width: 100%
             object-fit: cover
             background: black
-            border-radius: 5px
 
         .name
             color: white
@@ -249,19 +270,33 @@
             position: absolute
             top: 10px
             left: 10px
+            width: calc(100% - 20px)
+            overflow: hidden
+            text-overflow: ellipsis
+            white-space: nowrap
+            z-index: 1
+
+        .indicators
+            color: white
+            position: absolute
+            bottom: 5px
+            left: 5px
             display: flex
             align-items: center
-            gap: 7px
             z-index: 1
             user-select: none
+            background: var(--bg)
+            border-radius: 4px
 
             .icon
                 font-family: 'Material Icons'
-                font-size: 16px
+                font-size: 14px
+                display: grid
+                place-content: center
+                height: 24px
+                width: 24px
+                color: #ffffff
 
-                &.owner
-                    color: #FFC312
-
-                &.moderator
-                    color: #ffffffbb
+                &.muted
+                    color: #eb4d4b
 </style>

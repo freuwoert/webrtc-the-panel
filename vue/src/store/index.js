@@ -173,8 +173,12 @@ export default new Vuex.Store({
             let user = state.room.users.find(e => e.id === state.socket.id)
 
             user.audio.isMuted = data
-            
             user.audio.audioGainNode.gain.setValueAtTime(data ? 0 : 1, user.audio.audioContext.currentTime)
+
+            state.socket.emit('room.user.set-mute', {
+                userId: user.id,
+                isMuted: data,
+            })
         },
 
         localStream(state, data) {
