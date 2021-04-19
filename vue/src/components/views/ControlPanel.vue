@@ -7,9 +7,11 @@
             
             <div class="spacer"></div>
 
-            <!-- <button class="icon" @click="toggleMute()">{{localAudioTrack.enabled ? '&#983916;' : '&#983917;'}}</button> -->
-            <button class="icon" @click="toggleCamera()">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
-            <a class="icon" :href="'/?room='+room.id" target="_blank">&#984012;</a>
+            <div class="button-wrapper">
+                <button class="icon" :class="{'red': !localVideoTrack}" @click="toggleCamera()">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
+                <button class="icon" :class="{'red': this.selfUser.audio.isMuted}" @click="toggleMute()">{{this.selfUser.audio.isMuted ? '&#983917;' : '&#983916;'}}</button>
+                <a class="icon" :href="'/?room='+room.id" target="_blank">&#984012;</a>
+            </div>
 
             <ui-screws></ui-screws>
         </div>
@@ -18,7 +20,9 @@
             <div class="user" v-for="user in room.users" :key="user.id">
                 <span class="name">
                     {{user.name}}
-                    <span v-if="user.isSelf">(you)</span>
+                    <span v-if="user.isSelf"> (you)</span>
+                    <span class="icon moderator" title="Room moderator" v-if="user.isModerator">&#985231;</span>
+                    <span class="icon owner" title="Room owner" v-if="user.isOwner">&#983461;</span>
                 </span>
 
                 <video v-if="!user.isSelf" autoplay muted class="video" :id="'video_'+user.id"></video>
@@ -26,6 +30,8 @@
 
                 <video v-else autoplay muted class="video" id="video_local"></video>
             </div>
+
+            <!-- <button class="icon">&#983699;</button> -->
 
             <ui-screws></ui-screws>
         </div>
@@ -110,11 +116,15 @@
             localVideoTrack() {
                 return this.$store.getters.localVideoTrack
             },
+
+            selfUser() {
+                return this.room.users.find(e => e.id === this.socket.id)
+            },
         },
 
         methods: {
             toggleMute() {
-                this.$store.commit('setMuteOnLocalAudioTrack', !this.localAudioTrack.enabled)
+                this.$store.commit('setMute', !this.selfUser.audio.isMuted)
                 this.$forceUpdate()
             },
 
@@ -174,6 +184,10 @@
 
         .spacer
             flex: 1
+
+        .button-wrapper
+            background: var(--bg)
+            border-radius: 5px
 
     .users
         grid-area: users
@@ -235,4 +249,19 @@
             position: absolute
             top: 10px
             left: 10px
+            display: flex
+            align-items: center
+            gap: 7px
+            z-index: 1
+            user-select: none
+
+            .icon
+                font-family: 'Material Icons'
+                font-size: 16px
+
+                &.owner
+                    color: #FFC312
+
+                &.moderator
+                    color: #ffffffbb
 </style>

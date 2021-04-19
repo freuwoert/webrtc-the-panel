@@ -96,8 +96,10 @@ export default new Vuex.Store({
                 selfUser().audio.audioAnalyzer.fftSize = 32
                 selfUser().audio.audioAnalyzer.maxDecibels = 0
                 selfUser().audio.audioAnalyzer.minDecibels = -56
+
+                let level = selfUser().audio.isMuted ? 0 : selfUser().audio.volume / 100
     
-                selfUser().audio.audioGainNode.gain.setValueAtTime(1, selfUser().audio.audioContext.currentTime)
+                selfUser().audio.audioGainNode.gain.setValueAtTime(level, selfUser().audio.audioContext.currentTime)
     
                 selfUser().audio.audioDestination.stream.getAudioTracks().forEach(track => {
                     state.commit('localAudioTrack', track, selfUser().audio.audioDestination.stream)
@@ -167,8 +169,12 @@ export default new Vuex.Store({
             state.local.audio.track = data
         },
 
-        setMuteOnLocalAudioTrack(state, data) {
-            Vue.set(state.local.audio.track, 'enabled', data)
+        setMute(state, data) {
+            let user = state.room.users.find(e => e.id === state.socket.id)
+
+            user.audio.isMuted = data
+            
+            user.audio.audioGainNode.gain.setValueAtTime(data ? 0 : 1, user.audio.audioContext.currentTime)
         },
 
         localStream(state, data) {

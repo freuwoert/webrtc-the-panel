@@ -12,6 +12,7 @@ module.exports = class User
             volume: 100,
             overlayVolume: 100,
             level: 0,
+            isMuted: false,
             freq: null,
             audioContext: null,
             audioSource: null,

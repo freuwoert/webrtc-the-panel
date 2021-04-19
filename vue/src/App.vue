@@ -391,6 +391,14 @@
             padding: 0
             font-weight: 300
             letter-spacing: 0
+            color: white
+            background: transparent
+
+            &:hover
+                background: #ffffff10
+
+            &.red
+                color: #eb4d4b
 
         &:hover
             background: var(--accent-light)
