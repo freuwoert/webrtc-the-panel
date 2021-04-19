@@ -36,7 +36,7 @@
         },
 
         mounted() {
-            this.calculate(this.value && !isNaN(this.value) ? parseFloat(this.value) : this.value)
+            this.calculate(typeof this.value === 'number' && !isNaN(this.value) ? parseFloat(this.value) : this.value)
 
             window.addEventListener('mouseup', () => {
                 this.up()
@@ -49,7 +49,7 @@
 
         watch: {
             value() {
-                if (!this.isGrabbing) this.calculate(this.value && !isNaN(this.value) ? parseFloat(this.value) : this.value_)
+                if (!this.isGrabbing) this.calculate(typeof this.value === 'number' && !isNaN(this.value) ? parseFloat(this.value) : this.value_)
             }
         },
 
@@ -58,7 +58,6 @@
                 this.value_ = this.clamp(value, this.min, this.max)
                 this.value_ = this.value_ - this.value_ % this.step
                 this.percentage = this.clamp((this.value_ - this.min) / (this.max - this.min) * 100, 0, 100)
-
             },
 
             clamp(value, min, max) {

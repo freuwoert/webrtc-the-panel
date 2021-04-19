@@ -9,7 +9,7 @@
 
             <!-- <button class="icon" @click="toggleMute()">{{localAudioTrack.enabled ? '&#983916;' : '&#983917;'}}</button> -->
             <button class="icon" @click="toggleCamera()">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
-            <a :href="'/?room='+room.id" target="_blank">Get Invite Link</a>
+            <a class="icon" :href="'/?room='+room.id" target="_blank">&#984012;</a>
 
             <ui-screws></ui-screws>
         </div>
@@ -18,10 +18,12 @@
             <div class="user" v-for="user in room.users" :key="user.id">
                 <span class="name">
                     {{user.name}}
-                    <span v-if="user.id === socket.id">(you)</span>
+                    <span v-if="user.isSelf">(you)</span>
                 </span>
 
-                <video v-if="user.id !== socket.id" autoplay class="video" :id="'video_'+user.id"></video>
+                <video v-if="!user.isSelf" autoplay muted class="video" :id="'video_'+user.id"></video>
+                <audio v-if="!user.isSelf" autoplay class="audio" :id="'audio_'+user.id"></audio>
+
                 <video v-else autoplay muted class="video" id="video_local"></video>
             </div>
 
@@ -73,7 +75,7 @@
                     if (!user.audio.audioAnalyzer) continue
 
                     user.audio.audioAnalyzer.getByteFrequencyData(user.audio.freq)
-                    let level = (user.audio.freq.reduce((a, c) => a + c) / 16 / (user.audio.audioAnalyzer.maxDecibels - user.audio.audioAnalyzer.minDecibels) * 100)
+                    let level = (user.audio.freq.reduce((a, c) => a + c) / 16 / (user.audio.audioAnalyzer.maxDecibels - user.audio.audioAnalyzer.minDecibels) * 100) * (user.isSelf ? (user.audio.volume / 100) : 1)
                     this.levels[user.id] = level
                     this.$forceUpdate()
                 }

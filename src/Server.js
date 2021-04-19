@@ -107,9 +107,7 @@ module.exports = class Server {
 
                     user.audio.volume = data.volume
 
-                    console.log(user.id)
-
-                    socket.broadcast.to(roomId).emit('room.user.set-volume', {
+                    this.io.to(roomId).emit('room.user.set-volume', {
                         user: data.userId,
                         volume: data.volume,
                     })

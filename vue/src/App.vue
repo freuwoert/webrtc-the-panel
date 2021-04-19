@@ -47,7 +47,6 @@
             // this.loadAudio('./IntruderAlert.mp3')
 
             this.socket.on("join-request-answer", async data => {
-                console.log('🔹 answer')
                 let peer = this.getPeerOrNull(data.from)
 
                 if (!peer) return
@@ -81,7 +80,7 @@
                 }
                 
                 this.$store.commit('view', 'room')
-                this.$store.commit('room', {...data.room, users})
+                this.$store.commit('room', {...data.room, users: users})
 
                 await this.$store.dispatch('setUserMediaInput', {
                     requestAudio: true,
@@ -107,6 +106,13 @@
                         volume: data.volume
                     },
                 })
+
+                let user = this.room.users.find(e => e.id === data.user)
+
+                if (!user.isSelf)
+                {
+                    user.audio.audioGainNode.gain.setValueAtTime(data.volume / 100, user.audio.audioContext.currentTime)
+                }
             })
 
 
@@ -121,8 +127,6 @@
 
 
             this.socket.on('join-request-offer', async data => {
-                console.log('🔹 offer')
-
                 let peer = await this.getOrCreatePeer(data.from)
 
                 await peer.connection.setRemoteDescription(new RTCSessionDescription(data.offer))
@@ -133,8 +137,6 @@
                     answer,
                     to: data.from
                 })
-                
-                console.log('🔸 answer')
             })
 
 
@@ -149,7 +151,6 @@
                 }
 
                 peer.connection.addIceCandidate(new RTCIceCandidate(data.candidate))
-                console.log('🔹 ice candidate')
             })
         },
 
@@ -217,9 +218,9 @@
                 }
 
                 let audio = {
-                    volume: 100,
-                    overlayVolume: 100,
-                    level: 0,
+                    // volume: 100,
+                    // overlayVolume: 100,
+                    // level: 0,
                     freq: new Uint8Array(16),
                     audioContext: new AudioContext(),
                     audioSource: null,
@@ -234,22 +235,13 @@
                     audioTrack: null,
                     connection: new RTCPeerConnection(this.peerConnectionConfig),
                 }
+
+
                 
                 peer.connection.ontrack = (e) => {
-                    console.log('sfdfdsfsd')
-                    const remoteVideo = document.getElementById('video_'+id)
-                    
-                    if (!remoteVideo) return
-
-                    remoteVideo.srcObject = e.streams[0]
-                    remoteVideo.play()
-
                     let selfUser = () => {
                         return this.room.users.find(e => e.id === id)
                     }
-
-                    console.log(id)
-
 
                     this.$store.commit('setUserAudio', {id, data: {audioSource: selfUser().audio.audioContext.createMediaStreamSource(e.streams[0])}})
                     this.$store.commit('setUserAudio', {id, data: {audioAnalyzer: selfUser().audio.audioContext.createAnalyser()}})
@@ -265,12 +257,31 @@
                     selfUser().audio.audioAnalyzer.minDecibels = -56
         
                     selfUser().audio.audioGainNode.gain.setValueAtTime(1, selfUser().audio.audioContext.currentTime)
+
+
+
+                    const remoteVideo = document.getElementById('video_'+id)
+                    
+                    if (remoteVideo)
+                    {
+                        remoteVideo.srcObject = e.streams[0]
+                        remoteVideo.play()
+                    }
+
+
+
+                    const remoteAudio = document.getElementById('audio_'+id)
+                    
+                    if (remoteAudio)
+                    {
+                        remoteAudio.srcObject = selfUser().audio.audioDestination.stream
+                        remoteAudio.play()
+                    }
                 }
 
                 peer.connection.onicecandidate = (e) => {
                     if (!e.candidate) return
 
-                    console.log('🔹 ice candidate')
                     this.socket.emit('peer.add.candidate', {
                         candidate: e.candidate,
                         to: id
@@ -278,7 +289,6 @@
                 }
 
                 peer.connection.addEventListener('negotiationneeded', () => {
-                    console.log('🔸 renegotiation')
                     this.connectToPeer(id)
                 }, false)
                 
@@ -286,29 +296,30 @@
                 if (this.localVideoTrack){ peer.videoTrack = peer.connection.addTrack(this.localVideoTrack, this.localStream)}
 
                 this.$store.commit('setUser', { id, data: {peer, audio} })
+                // this.$store.commit('setUserAudio', { id, data: {audio} })
 
                 return peer
             },
 
 
 
-            loadAudio(url) {
-                fetch(url)
-                .then(response => response.arrayBuffer())
-                .then(arrayBuffer => this.audioContext.decodeAudioData(arrayBuffer))
-                .then(audioBuffer => {
-                    this.buffers.audio.push(audioBuffer)
-                });
-            },
+            // loadAudio(url) {
+            //     fetch(url)
+            //     .then(response => response.arrayBuffer())
+            //     .then(arrayBuffer => this.audioContext.decodeAudioData(arrayBuffer))
+            //     .then(audioBuffer => {
+            //         this.buffers.audio.push(audioBuffer)
+            //     });
+            // },
 
-            playAudio(index) {
-                console.log(index)
-                let source = this.audioContext.createBufferSource()
-                source.buffer = this.buffers.audio[index]
-                source.connect(this.audioOutput)
-                source.start()
-                console.log(source)
-            },
+            // playAudio(index) {
+            //     console.log(index)
+            //     let source = this.audioContext.createBufferSource()
+            //     source.buffer = this.buffers.audio[index]
+            //     source.connect(this.audioOutput)
+            //     source.start()
+            //     console.log(source)
+            // },
         },
 
         components: {
