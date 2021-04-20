@@ -5,6 +5,12 @@ import UiFader from './components/ui/UiFader.vue'
 import UiSlider from './components/ui/UiSlider.vue'
 import UiSpinner from './components/ui/UiSpinner.vue'
 import UiScrews from './components/ui/UiScrews.vue'
+import Clipboard from 'v-clipboard'
+import VTooltip from 'v-tooltip'
+import hotkeys from 'hotkeys-js'
+
+Vue.use(VTooltip)
+Vue.use(Clipboard)
 
 Vue.config.productionTip = false
 

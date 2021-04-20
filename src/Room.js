@@ -9,6 +9,7 @@ module.exports = class Room extends Helper
         this.id = this.randomStr(50)
         this.users = new Map
         this.owner = null
+        this.chat = []
         this.caps = {
             user: {
                 userVolume: 100,

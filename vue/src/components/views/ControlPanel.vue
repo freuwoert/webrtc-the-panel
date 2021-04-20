@@ -8,9 +8,12 @@
             <div class="spacer"></div>
 
             <div class="button-wrapper">
-                <button class="icon" :class="{'red': !localVideoTrack}" @click="toggleCamera()">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
-                <button class="icon" :class="{'red': this.selfUser.audio.isMuted}" @click="toggleMute()">{{this.selfUser.audio.isMuted ? '&#983917;' : '&#983916;'}}</button>
-                <a class="icon" :href="'/?room='+room.id" target="_blank">&#984012;</a>
+                <button class="icon" v-tooltip="'Deafen'">&#983755;</button>
+                <button class="icon" v-tooltip="!localVideoTrack ? 'Camera on' : 'Camera off'" :class="{'red': !localVideoTrack}" @click="$store.dispatch('toggleCamera')">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
+                <button class="icon" v-tooltip="this.selfUser.audio.isMuted ? 'Unmute' : 'Mute'" :class="{'red': this.selfUser.audio.isMuted}" @click="$store.dispatch('toggleMute')">{{this.selfUser.audio.isMuted ? '&#983917;' : '&#983916;'}}</button>
+                <div class="divider"></div>
+                <button class="icon" v-tooltip="'Copy invite-link'" v-clipboard:success="copiedInviteLink" v-clipboard="() => roomInviteLink">&#983372;</button>
+                <a class="icon" v-tooltip="'Open invite-link'" :href="roomInviteLink" target="_blank">&#984012;</a>
             </div>
 
             <ui-screws></ui-screws>
@@ -18,15 +21,15 @@
 
         <div class="users">
             <div class="user" v-for="user in room.users" :key="user.id">
-                <span class="name" :title="user.name">
+                <span class="name" v-tooltip="user.name">
                     {{user.name}}
                     <span v-if="user.isSelf"> (you)</span>
                 </span>
 
                 <div class="indicators">
-                    <span class="icon moderator" title="Room moderator" v-if="user.isModerator">&#984421;</span>
-                    <span class="icon owner" title="Room owner" v-if="user.isOwner">&#983461;</span>
-                    <span class="icon muted" title="User is muted" v-if="user.audio.isMuted">&#983917;</span>
+                    <span class="icon moderator" v-tooltip="'Room moderator'" v-if="user.isModerator">&#984421;</span>
+                    <span class="icon owner" v-tooltip="'Room owner'" v-if="user.isOwner">&#983461;</span>
+                    <span class="icon muted" v-tooltip="'User is muted'" v-if="user.audio.isMuted">&#983917;</span>
                 </div>
 
                 <video v-if="!user.isSelf" autoplay muted class="video" :id="'video_'+user.id"></video>
@@ -106,6 +109,10 @@
                 return this.$store.getters.room
             },
 
+            roomInviteLink() {
+                return window.location.origin + '/?room=' + this.room.id
+            },
+
             socket() {
                 return this.$store.getters.socket
             },
@@ -128,15 +135,6 @@
         },
 
         methods: {
-            toggleMute() {
-                this.$store.commit('setMute', !this.selfUser.audio.isMuted)
-                this.$forceUpdate()
-            },
-
-            toggleCamera() {
-                this.$store.dispatch(this.localVideoTrack ? 'turnOffUserCam' : 'turnOnUserCam')
-            },
-
             updateVideoDOM(id, stream) {
                 document.getElementById(id).srcObject = stream
             },
@@ -146,7 +144,13 @@
                     userId: user.id,
                     volume,
                 })
-            }
+            },
+
+
+
+            copiedInviteLink() {
+                alert('Invite link copied to clipboard!')
+            },
         },
 
         components: {},
@@ -193,6 +197,15 @@
         .button-wrapper
             background: var(--bg)
             border-radius: 5px
+            display: flex
+
+            .divider
+                background: var(--bg-dark)
+                height: 30px
+                width: 1px
+                margin: 5px
+                vertical-align: top
+                pointer-events: none
 
     .users
         grid-area: users
@@ -263,6 +276,10 @@
             width: 100%
             object-fit: cover
             background: black
+            pointer-events: none
+
+        .audio
+            pointer-events: none
 
         .name
             color: white

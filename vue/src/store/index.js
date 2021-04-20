@@ -158,6 +158,16 @@ export default new Vuex.Store({
                 user.peer.videoTrack = user.peer.connection.removeTrack(user.peer.videoTrack) || null
             }
         },
+
+        toggleCamera(state) {
+            state.dispatch(state.getters.localVideoTrack ? 'turnOffUserCam' : 'turnOnUserCam')
+        },
+
+        toggleMute(state) {
+            let user = state.getters.room.users.find(e => e.isSelf === true)
+
+            state.commit('setMute', !user.audio.isMuted)
+        },
     },
 
     mutations: {
