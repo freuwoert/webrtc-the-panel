@@ -18,6 +18,14 @@ export default new Vuex.Store({
             },
         },
 
+        controlPanelSetup: {
+            visibleContentPanel: 'main-panel',
+        },
+
+        hotkeySetup: {
+            scope: 'default',
+        },
+
         view: 'create-room',
         overlays: [],
         room: null,
@@ -52,6 +60,14 @@ export default new Vuex.Store({
 
         socket(state) {
             return state.socket
+        },
+
+        controlPanelSetup(state) {
+            return state.controlPanelSetup
+        },
+
+        hotkeySetup(state) {
+            return state.hotkeySetup
         },
     },
     
@@ -232,6 +248,12 @@ export default new Vuex.Store({
 
         overlays(state, data) {
             state.overlays = data
+        },
+
+
+
+        setVisibleContentPanel(state, data) {
+            state.controlPanelSetup.visibleContentPanel = data
         },
     },
 })

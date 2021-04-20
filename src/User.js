@@ -20,6 +20,9 @@ module.exports = class User
             audioGainNode: null,
             audioDestination: null,
         }
+        this.video = {
+            stream: null,
+        }
         this.peer = null
     }
 }

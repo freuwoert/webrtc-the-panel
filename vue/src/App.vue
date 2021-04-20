@@ -169,18 +169,6 @@
             })
         },
 
-        mounted() {
-            // Toggle Camera
-            hotkeys('ctrl+v', (event, handler) => {
-                this.$store.dispatch('toggleCamera')
-            })
-
-            // Toggle Mute
-            hotkeys('ctrl+m', (event, handler) => {
-                this.$store.dispatch('toggleMute')
-            })
-        },
-
         computed: {
             view() {
                 return this.$store.getters.view

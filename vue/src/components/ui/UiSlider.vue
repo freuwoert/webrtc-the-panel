@@ -125,7 +125,7 @@
                 left: 0
                 max-height: 100%
                 width: 100%
-                background: teal
+                background: var(--primary)
                 pointer-events: none
 
         .bar

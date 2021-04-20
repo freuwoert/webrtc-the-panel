@@ -21,5 +21,16 @@ Vue.component('ui-spinner', UiSpinner)
 
 new Vue({
     store,
-    render: h => h(App)
+    render: h => h(App),
+    mounted() {
+        // Toggle Camera
+        hotkeys('ctrl+v', (event, handler) => {
+            this.$store.dispatch('toggleCamera')
+        })
+
+        // Toggle Mute
+        hotkeys('ctrl+m', (event, handler) => {
+            this.$store.dispatch('toggleMute')
+        })
+    },
 }).$mount('#app')

@@ -1,7 +1,7 @@
 <template>
     <div class="chat-message-aligner" :class="{'own': source.isOwn}">
         <div class="chat-message-wrapper">
-            <span class="name">{{getUserFromId(source.senderId).name}}</span>
+            <span class="name">{{getUserFromId(source.senderId).name || 'UNNAMED'}}</span>
             <span class="message">{{source.rawMessage}}</span>
         </div>
     </div>
@@ -28,7 +28,7 @@
 
         methods: {
             getUserFromId(id) {
-                return this.room.users.find(e => e.id === id)
+                return this.room.users.find(e => e.id === id) || {}
             },
         }
     }
