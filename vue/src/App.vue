@@ -124,6 +124,12 @@
                 })
             })
 
+            this.socket.on('room.message.sent', data => {
+                this.$store.commit('addMessage', {
+                    message: data.message
+                })
+            })
+
 
 
             if (this.url.roomId)

@@ -4,6 +4,7 @@ const path = require('path')
 const {createServer} = require('http')
 const Room = require('./Room.js')
 const User = require('./User.js')
+const Message = require('./Message.js')
 
 module.exports = class Server {
     constructor(port) {
@@ -127,6 +128,26 @@ module.exports = class Server {
                     this.io.to(roomId).emit('room.user.set-mute', {
                         user: data.userId,
                         isMuted: data.isMuted,
+                    })
+                }
+            })
+
+            socket.on('room.message.send', data => {
+                let roomIds = this.getRoomIdsFromSocket(socket)
+
+                for (const roomId of roomIds)
+                {
+                    let room = this.roomDict.get(roomId)
+                    let rawMessageText = data.message.trim()
+
+                    if (!rawMessageText) return
+
+                    let message = new Message(socket.id, rawMessageText, roomId)
+                    
+                    room.chat.push(message)
+
+                    this.io.to(roomId).emit('room.message.sent', {
+                        message
                     })
                 }
             })

@@ -19,6 +19,8 @@
             <ui-screws></ui-screws>
         </div>
 
+
+
         <div class="users">
             <div class="user" v-for="user in room.users" :key="user.id">
                 <span class="name" v-tooltip="user.name">
@@ -43,18 +45,31 @@
             <ui-screws></ui-screws>
         </div>
 
+
+
         <div class="controls">
             <ui-screws></ui-screws>
         </div>
+
+
 
         <div class="player">
             <ui-screws></ui-screws>
         </div>
 
+
+
         <div class="chat">
-            <input placeholder="Message Chat" type="text" class="chat-bar">
+            <virtual-list class="chat-list" ref="chatList" :data-key="'id'" :data-sources="room.chat" :data-component="chat.messageComponent"/>
+            
+            <form @submit.prevent="sendMessage(chat.input)" class="message-form">
+                <input placeholder="Message Chat" type="text" v-model="chat.input" class="chat-bar">
+            </form>
+
             <ui-screws></ui-screws>
         </div>
+
+
 
         <div class="mixer">
             <ui-fader label="User Cap" :level="0" :uv="100" :ov="100"></ui-fader>
@@ -75,10 +90,18 @@
 </template>
 
 <script>
+    import VirtualList from 'vue-virtual-scroll-list'
+    import ChatMessage from '../chat/ChatMessage.vue'
+
     export default {
         data() {
             return {
                 levels: {},
+
+                chat: {
+                    input: '',
+                    messageComponent: ChatMessage,
+                }
             }
         },
 
@@ -96,6 +119,10 @@
             }, 8)
 
             this.updateVideoDOM('video_local', this.localStream)
+
+            this.socket.on('room.message.sent', () => {
+                this.$refs.chatList.scrollToBottom()
+            })
         },
 
         watch: {
@@ -148,12 +175,29 @@
 
 
 
+            sendMessage(message)
+            {
+                message = message.trim()
+
+                if (!message) return
+
+                this.socket.emit('room.message.send', {
+                    message,
+                })
+
+                this.chat.input = ''
+            },
+
+
+
             copiedInviteLink() {
                 alert('Invite link copied to clipboard!')
             },
         },
 
-        components: {},
+        components: {
+            'virtual-list': VirtualList
+        },
     }
 </script>
 
@@ -221,6 +265,31 @@
     .chat
         grid-area: chat
         position: relative
+
+        .chat-list
+            height: calc(100% - 76px)
+            width: 100%
+            padding: 0 10px
+            position: absolute
+            top: 10px
+            left: 0
+            overflow-x: hidden
+            overflow-y: scroll
+
+            &::-webkit-scrollbar
+                width: 10px
+                border-radius: 10px
+            
+            &::-webkit-scrollbar-track
+                border-radius: 10px
+                background: var(--bg-dark)
+                border: 3.5px solid var(--bg)
+            
+            &::-webkit-scrollbar-thumb
+                background: #556070
+                outline: none
+                border: 3.5px solid var(--bg)
+                border-radius: 10px
 
         .chat-bar
             height: 46px

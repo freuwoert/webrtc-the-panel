@@ -221,6 +221,11 @@ export default new Vuex.Store({
             Vue.set(state.room.users[index], 'audio', {...state.room.users[index].audio, ...data.data})
         },
 
+        addMessage(state, data) {
+            data.message.isOwn = data.message.senderId === state.socket.id
+            state.room.chat.push(data.message)
+        },
+
         removeUserFromRoom(state, data) {
             state.room.users = state.room.users.filter(e => e.id !== data)
         },
