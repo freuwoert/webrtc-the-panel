@@ -85,17 +85,17 @@ export default new Vuex.Store({
             }
 
             state.commit('localStream', stream)
-
-
+            
+            
             let selfUser = () => {
                 return state.getters.room.users.find(e => e.isSelf === true)
             }
 
+            let id = selfUser().id
+
             // Run audio setup
             if (options.requestAudio && selfUser())
             {
-                let id = selfUser().id
-
                 // AUDIO SETUP:
                 // Source -> GainNode -> Analyzer & Destination
                 state.commit('setUserAudio', {id, data: {audioContext: new AudioContext()}})
@@ -104,7 +104,7 @@ export default new Vuex.Store({
                 state.commit('setUserAudio', {id, data: {audioAnalyzer: selfUser().audio.audioContext.createAnalyser()}})
                 state.commit('setUserAudio', {id, data: {audioGainNode: selfUser().audio.audioContext.createGain()}})
                 state.commit('setUserAudio', {id, data: {audioDestination: selfUser().audio.audioContext.createMediaStreamDestination()}})
-    
+                
                 selfUser().audio.audioSource.connect(selfUser().audio.audioGainNode)
                 selfUser().audio.audioGainNode.connect(selfUser().audio.audioAnalyzer)
                 selfUser().audio.audioGainNode.connect(selfUser().audio.audioDestination)
@@ -112,19 +112,22 @@ export default new Vuex.Store({
                 selfUser().audio.audioAnalyzer.fftSize = 32
                 selfUser().audio.audioAnalyzer.maxDecibels = 0
                 selfUser().audio.audioAnalyzer.minDecibels = -56
-
+                
                 let level = selfUser().audio.isMuted ? 0 : selfUser().audio.volume / 100
-    
+                
                 selfUser().audio.audioGainNode.gain.setValueAtTime(level, selfUser().audio.audioContext.currentTime)
-    
+                
                 selfUser().audio.audioDestination.stream.getAudioTracks().forEach(track => {
                     state.commit('localAudioTrack', track, selfUser().audio.audioDestination.stream)
                 })
+
+                state.commit('setUserAudioStream', {id, data: selfUser().audio.audioDestination.stream})
             }
             else if (state.getters.localAudioTrack)
             {
                 state.getters.localAudioTrack.stop()
                 state.commit('localAudioTrack', null)
+                state.commit('setUserAudioStream', {id, data: null})
             }
 
 
@@ -135,11 +138,14 @@ export default new Vuex.Store({
                 stream.getVideoTracks().forEach(track => {
                     state.commit('localVideoTrack', track)
                 })
+
+                state.commit('setUserVideoStream', {id, data: stream})
             }
             else if (state.getters.localVideoTrack)
             {
                 state.getters.localVideoTrack.stop()
                 state.commit('localVideoTrack', null)
+                state.commit('setUserVideoStream', {id, data: null})
             }
         },
 
@@ -153,7 +159,7 @@ export default new Vuex.Store({
 
             for (let user of users)
             {
-                if (user.id === state.getters.socket.id) continue
+                if (user.id === state.getters.socket.id) continue // Exclude self
                 user.peer.audioTrack = user.peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
                 user.peer.videoTrack = user.peer.connection.addTrack(state.getters.localVideoTrack, state.getters.localStream)
             }
@@ -169,7 +175,7 @@ export default new Vuex.Store({
             
             for (let user of users)
             {
-                if (user.id === state.getters.socket.id) continue
+                if (user.id === state.getters.socket.id) continue // Exclude self
                 user.peer.audioTrack = user.peer.connection.addTrack(state.getters.localAudioTrack, state.getters.localStream)
                 user.peer.videoTrack = user.peer.connection.removeTrack(user.peer.videoTrack) || null
             }
@@ -221,6 +227,8 @@ export default new Vuex.Store({
             state.room = data
         },
 
+
+
         addUser(state, data) {
             state.room.users.push(data)
         },
@@ -236,6 +244,26 @@ export default new Vuex.Store({
             
             Vue.set(state.room.users[index], 'audio', {...state.room.users[index].audio, ...data.data})
         },
+
+        setUserVideo(state, data) {
+            let index = state.room.users.findIndex(e => e.id === data.id)
+            
+            Vue.set(state.room.users[index], 'video', {...state.room.users[index].video, ...data.data})
+        },
+
+        setUserAudioStream(state, data) {
+            let index = state.room.users.findIndex(e => e.id === data.id)
+            
+            Vue.set(state.room.users[index].audio, 'stream', data.data)
+        },
+
+        setUserVideoStream(state, data) {
+            let index = state.room.users.findIndex(e => e.id === data.id)
+            
+            Vue.set(state.room.users[index].video, 'stream', data.data)
+        },
+
+
 
         addMessage(state, data) {
             data.message.isOwn = data.message.senderId === state.socket.id

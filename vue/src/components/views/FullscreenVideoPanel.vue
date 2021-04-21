@@ -2,21 +2,24 @@
     <div class="video-wrapper">
         <button class="exit-fullscreen-button icon" v-tooltip="'Exit Fullscreen'" @click="$store.commit('setVisibleContentPanel', 'main-panel')">&#983700;</button>
 
-        <div class="user" v-for="user in room.users" :key="user.id">
-            <span class="name" v-tooltip="user.name">
-                {{user.name}}
-                <span v-if="user.isSelf"> (you)</span>
-            </span>
+        <div class="user-sidebar">
+            <div class="user" v-for="user in room.users" :key="user.id" @click="updateVideoDOM('main_fullscreen_video', user.video.stream)">
+                <span class="name" v-tooltip="user.name">
+                    {{user.name}}
+                    <span v-if="user.isSelf"> (you)</span>
+                </span>
 
-            <div class="indicators">
-                <span class="icon moderator" v-tooltip="'Room moderator'" v-if="user.isModerator">&#984421;</span>
-                <span class="icon owner" v-tooltip="'Room owner'" v-if="user.isOwner">&#983461;</span>
-                <span class="icon muted" v-tooltip="'User is muted'" v-if="user.audio.isMuted">&#983917;</span>
+                <div class="indicators">
+                    <span class="icon moderator" v-tooltip="'Room moderator'" v-if="user.isModerator">&#984421;</span>
+                    <span class="icon owner" v-tooltip="'Room owner'" v-if="user.isOwner">&#983461;</span>
+                    <span class="icon muted" v-tooltip="'User is muted'" v-if="user.audio.isMuted">&#983917;</span>
+                </div>
+
+                <video autoplay muted class="video" :class="{'local-video': user.isSelf}" :id="'fullscreen_video_'+user.id"></video>
             </div>
-
-            <video v-if="!user.isSelf" autoplay muted class="video" :id="'fullscreen_video_'+user.id"></video>
-            <video v-else autoplay muted class="video" id="fullscreen_video_local"></video>
         </div>
+        
+        <video autoplay muted class="fullscreen-video" id="main_fullscreen_video"></video>
 
         <ui-screws></ui-screws>
     </div>
@@ -25,27 +28,12 @@
 <script>
     export default {
         mounted() {
-
-            this.updateVideoDOM('fullscreen_video_local', this.localStream)
-        },
-
-        watch: {
-            localVideoTrack() {
-                this.updateVideoDOM('fullscreen_video_local', this.localStream)
-            },
-
-            room() {
-                for (const user of this.room.user)
+            this.$store.subscribe((mutation, state) => {
+                if (mutation.type === 'setUserVideoStream')
                 {
-                    const remoteVideo = document.getElementById('fullscreen_video_'+user.id)
-                    
-                    if (remoteVideo)
-                    {
-                        remoteVideo.srcObject = user.video.stream
-                        remoteVideo.play()
-                    }
+                    this.updateVideoDOM('fullscreen_video_'+mutation.payload.id, mutation.payload.data)
                 }
-            }
+            })
         },
 
         computed: {
@@ -76,7 +64,10 @@
 
         methods: {
             updateVideoDOM(id, stream) {
-                document.getElementById(id).srcObject = stream
+                let el = document.getElementById(id)
+                
+                if (!el) return
+                el.srcObject = stream
             },
         },
 
@@ -96,19 +87,45 @@
             position: absolute
             top: 10px
             right: 10px
+            z-index: 1
+
+        .user-sidebar
+            position: absolute
+            top: 0px
+            right: 0px
+            height: 100%
+            padding: 60px 10px
+            display: flex
+            flex-direction: column
+            gap: 10px
+
+            &:after
+                content: ''
+                position: absolute
+                top: 5px
+                left: -1px
+                width: 0
+                height: calc(100% - 10px)
+                border-left: 2px solid var(--bg-dark)
+
+        .fullscreen-video
+            width: calc(100% - 220px)
+            height: calc(100% - 20px)
+            position: absolute
+            top: 10px
+            left: 10px
+            background: black
+            border-radius: 5px
+            object-fit: contain
 
         .user
-            width: 400px
-            height: 225px
+            width: 180px
+            height: 115px
             position: relative
             vertical-align: top
             display: inline-block
-            margin-left: 10px
             border-radius: 5px
             overflow: hidden
-
-            #fullscreen_video_local
-                transform: scaleX(-1)
 
             .video
                 height: 100%
@@ -116,6 +133,9 @@
                 object-fit: cover
                 background: black
                 pointer-events: none
+                
+                &.local-video
+                    transform: scaleX(-1)
 
             .audio
                 pointer-events: none

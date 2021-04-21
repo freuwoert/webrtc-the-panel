@@ -275,23 +275,28 @@
 
 
 
-                    const remoteVideo = document.getElementById('video_'+id)
+                    this.$store.commit('setUserAudioStream', {id, data: selfUser().audio.audioDestination.stream})
+                    this.$store.commit('setUserVideoStream', {id, data: e.streams[0]})
+
+
+
+                    // const remoteVideo = document.getElementById('video_'+id)
                     
-                    if (remoteVideo)
-                    {
-                        remoteVideo.srcObject = e.streams[0]
-                        remoteVideo.play()
-                    }
+                    // if (remoteVideo)
+                    // {
+                    //     remoteVideo.srcObject = e.streams[0]
+                    //     remoteVideo.play()
+                    // }
 
 
 
-                    const remoteAudio = document.getElementById('audio_'+id)
+                    // const remoteAudio = document.getElementById('audio_'+id)
                     
-                    if (remoteAudio)
-                    {
-                        remoteAudio.srcObject = selfUser().audio.audioDestination.stream
-                        remoteAudio.play()
-                    }
+                    // if (remoteAudio)
+                    // {
+                    //     remoteAudio.srcObject = selfUser().audio.audioDestination.stream
+                    //     remoteAudio.play()
+                    // }
                 }
 
                 peer.connection.onicecandidate = (e) => {

@@ -9,7 +9,7 @@
 
             <div class="button-wrapper">
                 <!-- <button class="icon" v-tooltip="'Deafen'">&#983755;</button> -->
-                <button class="icon" v-tooltip="!localVideoTrack ? 'Camera on' : 'Camera off'" :class="{'red': !localVideoTrack}" @click="$store.dispatch('toggleCamera')">{{localVideoTrack ? '&#984423;' : '&#984424;'}}</button>
+                <button class="icon" v-tooltip="this.selfUser.video.stream ? 'Camera off' : 'Camera on'" :class="{'red': this.selfUser.video.stream === null}" @click="$store.dispatch('toggleCamera')">{{this.selfUser.video.stream ? '&#984423;' : '&#984424;'}}</button>
                 <!-- <button class="icon" v-tooltip="'Share Screen'">&#988291;</button> -->
                 <button class="icon" v-tooltip="this.selfUser.audio.isMuted ? 'Unmute' : 'Mute'" :class="{'red': this.selfUser.audio.isMuted}" @click="$store.dispatch('toggleMute')">{{this.selfUser.audio.isMuted ? '&#983917;' : '&#983916;'}}</button>
                 <div class="divider"></div>
@@ -38,15 +38,13 @@
                         <span class="icon muted" v-tooltip="'User is muted'" v-if="user.audio.isMuted">&#983917;</span>
                     </div>
 
-                    <video v-if="!user.isSelf" autoplay muted class="video" :id="'video_'+user.id"></video>
+                    <video autoplay muted class="video" :class="{'local-video': user.isSelf}" :id="'video_'+user.id"></video>
                     <audio v-if="!user.isSelf" autoplay class="audio" :id="'audio_'+user.id"></audio>
-
-                    <video v-else autoplay muted class="video" id="video_local"></video>
                 </div>
 
-                <!-- <div class="button-wrapper">
+                <div class="button-wrapper">
                     <button class="icon" v-tooltip="'Fullscreen'" @click="$store.commit('setVisibleContentPanel', 'fullscreen-video-panel')">&#983699;</button>
-                </div> -->
+                </div>
 
 
                 <ui-screws></ui-screws>
@@ -131,18 +129,29 @@
                 }
             }, 8)
 
-            this.updateVideoDOM('video_local', this.localStream)
+            // this.updateVideoDOM('video_local', this.localStream)
             
             this.$refs.chatList.scrollToBottom()
 
             this.socket.on('room.message.sent', () => {
                 this.$refs.chatList.scrollToBottom()
             })
+
+            this.$store.subscribe((mutation, state) => {
+                if (mutation.type === 'setUserVideoStream')
+                {
+                    this.updateVideoDOM('video_'+mutation.payload.id, mutation.payload.data)
+                }
+                else if (mutation.type === 'setUserAudioStream')
+                {
+                    this.updateVideoDOM('audio_'+mutation.payload.id, mutation.payload.data)
+                }
+            })
         },
 
         watch: {
             localVideoTrack() {
-                this.updateVideoDOM('video_local', this.localStream)
+                // this.updateVideoDOM('video_local', this.localStream)
             }
         },
 
@@ -182,7 +191,10 @@
 
         methods: {
             updateVideoDOM(id, stream) {
-                document.getElementById(id).srcObject = stream
+                let el = document.getElementById(id)
+
+                if (!el) return
+                el.srcObject = stream
             },
 
             setUserVolume(user, volume) {
@@ -391,15 +403,15 @@
             border-radius: 5px
             overflow: hidden
 
-            #video_local
-                transform: scaleX(-1)
-
             .video
                 height: 100%
                 width: 100%
                 object-fit: cover
                 background: black
                 pointer-events: none
+
+                &.local-video
+                    transform: scaleX(-1)
 
             .audio
                 pointer-events: none
