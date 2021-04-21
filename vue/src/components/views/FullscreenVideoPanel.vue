@@ -12,7 +12,7 @@
             </div>
 
             <div class="user-wrapper">
-                <div class="user" v-for="(user, i) in room.users" :key="user.id" @click="focusedUserIndex = i">
+                <div class="user" v-for="(user, i) in room.users" :key="user.id" @click="focusedUserIndex = i; updateFullscreenVideoSource()">
                     <span class="name" v-tooltip="user.name">
                         {{user.name}}
                         <span v-if="user.isSelf"> (you)</span>
@@ -58,7 +58,7 @@
                         if (this.room.users.length < this.focusedUserIndex + 1)
                         {
                             this.focusedUserIndex = 0
-                            this.updateVideoDOM('main_fullscreen_video', this.room.users[this.focusedUserIndex].video.stream)
+                            this.updateFullscreenVideoSource()
                         }
                         break
                 }
@@ -97,6 +97,10 @@
                 
                 if (!el) return
                 el.srcObject = stream
+            },
+
+            updateFullscreenVideoSource() {
+                this.updateVideoDOM('main_fullscreen_video', this.room.users[this.focusedUserIndex].video.stream)
             },
         },
 
