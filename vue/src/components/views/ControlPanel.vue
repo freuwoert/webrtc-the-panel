@@ -337,20 +337,6 @@
                 overflow-x: hidden
                 overflow-y: scroll
 
-                &::-webkit-scrollbar
-                    width: 10px
-                    border-radius: 10px
-                
-                &::-webkit-scrollbar-track
-                    border-radius: 10px
-                    background: var(--bg)
-                
-                &::-webkit-scrollbar-thumb
-                    background: #556070
-                    outline: none
-                    border: 3.5px solid var(--bg)
-                    border-radius: 10px
-
             .chat-bar
                 height: 46px
                 border-radius: 5px
