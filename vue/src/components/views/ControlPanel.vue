@@ -1,233 +1,47 @@
 <template>
     <div id="wrapper">
-        <div class="menu">
-            <div class="logo-wrapper">
-                <img src="../../assets/images/logo_white.svg" alt="The Panel Logo" class="logo">
-            </div>
-            
-            <div class="spacer"></div>
-
-            <div class="button-wrapper">
-                <!-- <button class="icon" v-tooltip="'Deafen'">&#983755;</button> -->
-                <button class="icon" v-tooltip="this.selfUser.video.stream ? 'Camera off' : 'Camera on'" :class="{'red': this.selfUser.video.stream === null}" @click="$store.dispatch('toggleCamera')">{{this.selfUser.video.stream ? '&#984423;' : '&#984424;'}}</button>
-                <!-- <button class="icon" v-tooltip="'Share Screen'">&#988291;</button> -->
-                <button class="icon" v-tooltip="this.selfUser.audio.isMuted ? 'Unmute' : 'Mute'" :class="{'red': this.selfUser.audio.isMuted}" @click="$store.dispatch('toggleMute')">{{this.selfUser.audio.isMuted ? '&#983917;' : '&#983916;'}}</button>
-                <div class="divider"></div>
-                <button class="icon" v-tooltip="'Copy invite-link'" v-clipboard:success="copiedInviteLink" v-clipboard="() => roomInviteLink">&#983060;</button>
-                <a class="icon" v-tooltip="'Open invite-link'" :href="roomInviteLink" target="_blank">&#984012;</a>
-                <!-- <div class="divider"></div>
-                <button class="icon" v-tooltip="'Settings'">&#984211;</button> -->
-            </div>
-
-            <ui-screws></ui-screws>
-        </div>
-
-
+        <app-bar class="app-bar"></app-bar>
 
         <div class="main-panel" v-show="controlPanelSetup.visibleContentPanel === 'main-panel'">
-            <div class="users">
-                <div class="user" v-for="user in room.users" :key="user.id">
-                    <span class="name" v-tooltip="user.name">
-                        {{user.name}}
-                        <span v-if="user.isSelf"> (you)</span>
-                    </span>
+            <users class="users"></users>
 
-                    <div class="indicators">
-                        <span class="icon moderator" v-tooltip="'Room moderator'" v-if="user.isModerator">&#984421;</span>
-                        <span class="icon owner" v-tooltip="'Room owner'" v-if="user.isOwner">&#983461;</span>
-                        <span class="icon muted" v-tooltip="'User is muted'" v-if="user.audio.isMuted">&#983917;</span>
-                    </div>
+            <launchpad class="launchpad"></launchpad>
 
-                    <video autoplay muted class="video" :class="{'local-video': user.isSelf}" :id="'video_'+user.id"></video>
-                    <audio v-if="!user.isSelf" autoplay class="audio" :id="'audio_'+user.id"></audio>
-                </div>
+            <player class="player"></player>
 
-                <div class="button-wrapper">
-                    <button class="icon" v-tooltip="'Fullscreen'" @click="$store.commit('setVisibleContentPanel', 'fullscreen-video-panel')">&#983699;</button>
-                </div>
+            <chat class="chat"></chat>
 
-
-                <ui-screws></ui-screws>
-            </div>
-
-
-
-            <div class="controls">
-                <ui-screws></ui-screws>
-            </div>
-
-
-
-            <div class="player">
-                <ui-screws></ui-screws>
-            </div>
-
-
-
-            <div class="chat">
-                <virtual-list class="chat-list" ref="chatList" :data-key="'id'" :data-sources="room.chat" :data-component="chat.messageComponent"/>
-                
-                <form @submit.prevent="sendMessage(chat.input)" class="message-form">
-                    <input placeholder="Message Chat" type="text" v-model="chat.input" class="chat-bar">
-                </form>
-
-                <ui-screws></ui-screws>
-            </div>
-
-
-
-            <div class="mixer">
-                <ui-fader label="User Cap" :level="0" :uv="100" :ov="100"></ui-fader>
-                <ui-fader label="Guest Cap" :level="0" :uv="100" :ov="100"></ui-fader>
-
-                <div class="minimal-spacer">
-                    <ui-screws></ui-screws>
-                </div>
-
-                <ui-fader v-for="user in room.users" :key="user.id" :label="user.id !== socket.id ? user.name : 'Local'" :level="levels[user.id]" :uv="user.audio.volume" @uv="setUserVolume(user, $event)" :ov="user.audio.overlayVolume"></ui-fader>
-
-                <div class="spacer">
-                    <ui-screws></ui-screws>
-                    <img src="../../assets/images/logo_white.svg" alt="The Panel Logo" class="logo">
-                </div>
-            </div>
+            <mixer class="mixer"></mixer>
         </div>
-
-
 
         <fullscreen-video-panel class="fullscreen-video-panel" v-show="controlPanelSetup.visibleContentPanel === 'fullscreen-video-panel'"></fullscreen-video-panel>
     </div>
 </template>
 
 <script>
-    import VirtualList from 'vue-virtual-scroll-list'
-    import ChatMessage from '../chat/ChatMessage.vue'
+    
     import FullscreenVideoPanel from './FullscreenVideoPanel.vue'
+    import Chat from '../chat/Chat.vue'
+    import Mixer from '../mixer/Mixer.vue'
+    import Users from '../users/Users.vue'
+    import Launchpad from '../launchpad/Launchpad.vue'
+    import Player from '../player/Player.vue'
+    import AppBar from '../app-bar/AppBar.vue'
 
     export default {
-        data() {
-            return {
-                levels: {},
-
-                chat: {
-                    input: '',
-                    messageComponent: ChatMessage,
-                }
-            }
-        },
-
-        mounted() {
-            setInterval(() => {
-                for (let user of this.room.users)
-                {
-                    if (!user.audio.audioAnalyzer) continue
-
-                    user.audio.audioAnalyzer.getByteFrequencyData(user.audio.freq)
-                    let level = (user.audio.freq.reduce((a, c) => a + c) / 16 / (user.audio.audioAnalyzer.maxDecibels - user.audio.audioAnalyzer.minDecibels) * 100) * (user.isSelf ? (user.audio.volume / 100) : 1)
-                    this.levels[user.id] = level
-                    this.$forceUpdate()
-                }
-            }, 8)
-
-            // this.updateVideoDOM('video_local', this.localStream)
-            
-            this.$refs.chatList.scrollToBottom()
-
-            this.socket.on('room.message.sent', () => {
-                this.$refs.chatList.scrollToBottom()
-            })
-
-            this.$store.subscribe((mutation, state) => {
-                if (mutation.type === 'setUserVideoStream')
-                {
-                    this.updateVideoDOM('video_'+mutation.payload.id, mutation.payload.data)
-                }
-                else if (mutation.type === 'setUserAudioStream')
-                {
-                    this.updateVideoDOM('audio_'+mutation.payload.id, mutation.payload.data)
-                }
-            })
-        },
-
-        watch: {
-            localVideoTrack() {
-                // this.updateVideoDOM('video_local', this.localStream)
-            }
-        },
-
         computed: {
             controlPanelSetup() {
                 return this.$store.getters.controlPanelSetup
             },
-
-            room() {
-                return this.$store.getters.room
-            },
-
-            roomInviteLink() {
-                return window.location.origin + '/?room=' + this.room.id
-            },
-
-            socket() {
-                return this.$store.getters.socket
-            },
-
-            localStream() {
-                return this.$store.getters.localStream
-            },
-
-            localAudioTrack() {
-                return this.$store.getters.localAudioTrack
-            },
-
-            localVideoTrack() {
-                return this.$store.getters.localVideoTrack
-            },
-
-            selfUser() {
-                return this.room.users.find(e => e.id === this.socket.id)
-            },
-        },
-
-        methods: {
-            updateVideoDOM(id, stream) {
-                let el = document.getElementById(id)
-
-                if (!el) return
-                el.srcObject = stream
-            },
-
-            setUserVolume(user, volume) {
-                this.socket.emit('room.user.set-volume', {
-                    userId: user.id,
-                    volume,
-                })
-            },
-
-
-
-            sendMessage(message)
-            {
-                message = message.trim()
-
-                if (!message) return
-
-                this.socket.emit('room.message.send', {
-                    message,
-                })
-
-                this.chat.input = ''
-            },
-
-
-
-            copiedInviteLink() {
-                alert('Invite link copied to clipboard!')
-            },
         },
 
         components: {
-            'virtual-list': VirtualList,
+            Chat,
+            Mixer,
+            Users,
+            Launchpad,
+            Player,
+            AppBar,
             FullscreenVideoPanel
         },
     }
@@ -240,48 +54,12 @@
         display: grid
         grid-template-columns: 1fr
         grid-template-rows: 60px 1fr
-        grid-template-areas: "menu" "content"
+        grid-template-areas: "app-bar" "content"
         padding: 3px
         gap: 3px
 
-    .users, .controls, .player, .chat, .mixer, .menu
-        background: var(--bg)
-        border-radius: 4px
-        position: relative
-
-    .menu
-        grid-area: menu
-        padding: 10px
-        background-image: url('../../assets/images/terrain_white.svg')
-        background-size: cover
-        display: flex
-        gap: 10px
-
-        .logo-wrapper
-            height: 40px
-            padding: 7px
-            background: var(--bg)
-            border-radius: 4px
-
-            .logo
-                height: 100%
-                opacity: 0.5
-
-        .spacer
-            flex: 1
-
-        .button-wrapper
-            background: var(--bg)
-            border-radius: 5px
-            display: flex
-
-            .divider
-                border-left: 2px solid var(--bg-dark)
-                height: 30px
-                width: 0
-                margin: 5px 10px
-                vertical-align: top
-                pointer-events: none
+    .app-bar
+        grid-area: app-bar
 
     .main-panel
         width: 100%
@@ -290,36 +68,15 @@
         display: grid
         grid-template-columns: 400px 1fr 450px
         grid-template-rows: 150px 1fr 350px
-        grid-template-areas: "users users users" "controls player chat" "mixer mixer chat"
+        grid-template-areas: "users users users" "launchpad player chat" "mixer mixer chat"
         gap: 3px
         position: relative
 
         .users
             grid-area: users
-            padding: 10px
-            padding-left: 0
 
-            .button-wrapper
-                display: flex
-                flex-direction: column
-                width: 60px
-                height: 100%
-                padding: 10px
-                position: absolute
-                top: 0
-                right: 0
-
-                &:after
-                    content: ''
-                    position: absolute
-                    top: 5px
-                    left: -1px
-                    width: 0
-                    height: calc(100% - 10px)
-                    border-left: 2px solid var(--bg-dark)
-
-        .controls
-            grid-area: controls
+        .launchpad
+            grid-area: launchpad
 
         .player
             grid-area: player
@@ -327,114 +84,6 @@
         .chat
             grid-area: chat
 
-            .chat-list
-                height: calc(100% - 76px)
-                width: 100%
-                padding: 0 10px
-                position: absolute
-                top: 10px
-                left: 0
-                overflow-x: hidden
-                overflow-y: scroll
-
-            .chat-bar
-                height: 46px
-                border-radius: 5px
-                width: calc(100% - 20px)
-                background: var(--bg-dark)
-                color: #fff
-                position: absolute
-                bottom: 10px
-                left: 10px
-                padding: 0 15px
-                letter-spacing: 0.3px
-                font-family: 'Roboto'
-
-                &::placeholder
-                    color: #ffffff30
-                    letter-spacing: 0.5px
-
         .mixer
             grid-area: mixer
-            background: var(--bg-dark)
-            gap: 4px
-            display: flex
-
-            .minimal-spacer,
-            .spacer
-                flex: 1
-                border-radius: 4px
-                background: var(--bg)
-                height: 100%
-                position: relative
-                display: grid
-                place-content: center
-
-                .logo
-                    height: 30px
-                    opacity: 0.2
-
-            .minimal-spacer
-                width: 40px
-                flex: unset
-
-
-        .user
-            height: 100%
-            width: 200px
-            position: relative
-            vertical-align: top
-            display: inline-block
-            margin-left: 10px
-            border-radius: 5px
-            overflow: hidden
-
-            .video
-                height: 100%
-                width: 100%
-                object-fit: cover
-                background: black
-                pointer-events: none
-
-                &.local-video
-                    transform: scaleX(-1)
-
-            .audio
-                pointer-events: none
-
-            .name
-                color: white
-                text-shadow: 0 1px 2px #00000080
-                position: absolute
-                top: 10px
-                left: 10px
-                width: calc(100% - 20px)
-                overflow: hidden
-                text-overflow: ellipsis
-                white-space: nowrap
-                z-index: 1
-
-            .indicators
-                color: white
-                position: absolute
-                bottom: 5px
-                left: 5px
-                display: flex
-                align-items: center
-                z-index: 1
-                user-select: none
-                background: var(--bg)
-                border-radius: 4px
-
-                .icon
-                    font-family: 'Material Icons'
-                    font-size: 14px
-                    display: grid
-                    place-content: center
-                    height: 24px
-                    width: 24px
-                    color: #ffffff
-
-                    &.muted
-                        color: #eb4d4b
 </style>

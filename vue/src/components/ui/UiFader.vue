@@ -39,8 +39,6 @@
                 dB
             </div>
         </div>
-
-        <ui-screws></ui-screws>
     </div>
 </template>
 

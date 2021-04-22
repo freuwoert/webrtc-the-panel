@@ -12,6 +12,7 @@
     import SplashCreateRoom from './components/views/SplashCreateRoom.vue'
     import SplashJoinRoom from './components/views/SplashJoinRoom.vue'
     import ControlPanel from './components/views/ControlPanel.vue'
+    import OverlayPanel from './components/views/OverlayPanel.vue'
 
     export default {
         name: 'App',
