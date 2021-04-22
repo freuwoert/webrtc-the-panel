@@ -4,13 +4,9 @@
 
         <div class="main-panel" v-show="controlPanelSetup.visibleContentPanel === 'main-panel'">
             <users class="users"></users>
-
             <launchpad class="launchpad"></launchpad>
-
             <player class="player"></player>
-
             <chat class="chat"></chat>
-
             <mixer class="mixer"></mixer>
         </div>
 
@@ -19,7 +15,6 @@
 </template>
 
 <script>
-    
     import FullscreenVideoPanel from './FullscreenVideoPanel.vue'
     import Chat from '../chat/Chat.vue'
     import Mixer from '../mixer/Mixer.vue'
@@ -29,6 +24,18 @@
     import AppBar from '../app-bar/AppBar.vue'
 
     export default {
+        mounted() {
+            // Toggle Camera
+            hotkeys('ctrl+v', (event, handler) => {
+                this.$store.dispatch('toggleCamera')
+            })
+
+            // Toggle Mute
+            hotkeys('ctrl+m', (event, handler) => {
+                this.$store.dispatch('toggleMute')
+            })
+        },
+
         computed: {
             controlPanelSetup() {
                 return this.$store.getters.controlPanelSetup
