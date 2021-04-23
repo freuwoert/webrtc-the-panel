@@ -17,6 +17,8 @@ module.exports = class Server {
         this.initialize()
     }
 
+
+
     initialize() {
         this.app = express()
         this.httpServer = createServer(this.app)
@@ -32,10 +34,22 @@ module.exports = class Server {
         this.handleSocketConnection()
     }
 
+
+
     handleRoutes() {
-        // this.app.get('/', (req, res) => {
-        //     res.send(`<h1>Hello World</h1>`)
-        // })
+        // Give the client all overlay-keys to cennect to
+        // WARNING: in a release no overlay-keys should be exposed
+        this.app.post('/overlay/get-available-keys', (req, res) => {
+            res.json(Array.from(this.overlayDict.keys()))
+        })
+
+        this.app.post('/room/check', (req, res) => {
+            let room = this.roomDict.get(req.body.id)
+
+            res.json(room || null)
+        })
+
+        // Serves Vue
         this.app.all("*", (_req, res) => {
             try {
                 res.sendFile('./vue/dist/index.html')
@@ -45,14 +59,11 @@ module.exports = class Server {
         })
     }
 
+
+
     handleSocketConnection() {
         this.io.on('connection', socket => {
-            socket.emit('client.sync', {
-                overlays: Array.from(this.overlayDict.keys())
-            })
-
             socket.on('create.room', data => {
-                
                 let room = new Room()
                 let user = new User(socket.id, data.name)
 
@@ -86,15 +97,6 @@ module.exports = class Server {
 
                 socket.broadcast.to(room.id).emit('room.user.joined', {
                     user
-                })
-            })
-
-            socket.on('server.check.room-id', data => {
-                let room = this.roomDict.get(data.id)
-
-                socket.emit('server.checked.room-id', {
-                    room: room || null,
-                    roomExists: room ? true : false,
                 })
             })
 
@@ -220,6 +222,7 @@ module.exports = class Server {
 
     configureApp() {
         this.app.use(express.static('./vue/dist'))
+        this.app.use(express.json())
     }
 
     listen() {

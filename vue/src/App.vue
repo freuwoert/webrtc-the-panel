@@ -3,6 +3,7 @@
         <splash-create-room v-show="view === 'create-room'"></splash-create-room>
         <splash-join-room v-show="view === 'join-room'"></splash-join-room>
         <control-panel v-show="view === 'room'" v-if="room"></control-panel>
+        <overlay-panel v-show="view === 'overlay'" v-if="room"></overlay-panel>
     </div>
 </template>
 
@@ -19,16 +20,6 @@
 
         data() {
             return {
-                url: {
-                    roomId: new URLSearchParams(window.location.search).get('room'),
-                },
-    
-                audioContext: new AudioContext(),
-                audioOutput: null,
-                buffers: {
-                    audio: [],
-                },
-    
                 peerConnectionConfig: {
                     'iceServers': [
                         {'urls': 'stun:stun.stunprotocol.org:3478'},
@@ -39,29 +30,20 @@
         },
 
         async created() {
-            // this.audioOutput.stream.getAudioTracks().forEach(track => {
-            //     this.peerConnection.addTrack(track, this.audioOutput.stream)
-            // })
-            // this.peerConnection.addTrack(this.audioOutput.stream)
-            // console.log(this.audioOutput.getTracks())
-
-            // this.loadAudio('./IntruderAlert.mp3')
-
-            this.socket.on("join-request-answer", async data => {
-                let peer = this.getPeerOrNull(data.from)
-
-                if (!peer) return
-                
-                await peer.connection.setRemoteDescription(new RTCSessionDescription(data.answer))
+            fetch('/overlay/get-available-keys', {
+                method: 'POST',
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.$store.commit('overlays', data)
             })
 
-
-
-            this.socket.on('client.sync', data => {
-                this.$store.commit('overlays', data.overlays)
+            this.$store.commit('url', {
+                roomId: new URLSearchParams(window.location.search).get('room'),
+                overlayId: new URLSearchParams(window.location.search).get('overlay'),
             })
 
-
+            this.checkUrlParameters()
 
             this.socket.on('room.user.joined', async (data) => {
                 this.$store.commit('addUser', data.user)
@@ -131,17 +113,6 @@
                 })
             })
 
-
-
-            if (this.url.roomId)
-            {
-                this.socket.emit('server.check.room-id', {
-                    id: this.url.roomId,
-                })
-            }
-
-
-
             this.socket.on('join-request-offer', async data => {
                 let peer = await this.getOrCreatePeer(data.from)
 
@@ -155,7 +126,13 @@
                 })
             })
 
+            this.socket.on("join-request-answer", async data => {
+                let peer = this.getPeerOrNull(data.from)
 
+                if (!peer) return
+                
+                await peer.connection.setRemoteDescription(new RTCSessionDescription(data.answer))
+            })
 
             this.socket.on('peer.add.candidate', async data => {
                 let peer = this.getPeerOrNull(data.from)
@@ -179,6 +156,10 @@
                 return this.$store.getters.room
             },
 
+            url() {
+                return this.$store.getters.url
+            },
+
             socket() {
                 return this.$store.getters.socket
             },
@@ -197,6 +178,29 @@
         },
 
         methods: {
+            checkUrlParameters(url) {
+                if (this.url.overlayId)
+                {
+                    console.log(this.url.overlayId)
+                }
+                else if (this.url.roomId)
+                {
+                    fetch('/room/check', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id: this.url.roomId })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data) return
+                        this.$store.commit('view', 'join-room')
+                        this.$store.commit('lobby', data)
+                    })
+                }
+            },
+            
             async connectToPeer(id) {
                 let peer = await this.getOrCreatePeer(id)
                 
@@ -211,13 +215,7 @@
 
             getPeerOrNull(id) {
                 let user = this.room.users.find(e => e.id === id)
-
-                if (!user)
-                {
-                    return null
-                }
-
-                return user.peer
+                return user ? user.peer : null
             },
 
             async getOrCreatePeer(id) {
@@ -234,9 +232,6 @@
                 }
 
                 let audio = {
-                    // volume: 100,
-                    // overlayVolume: 100,
-                    // level: 0,
                     freq: new Uint8Array(16),
                     audioContext: new AudioContext(),
                     audioSource: null,
@@ -301,32 +296,13 @@
 
                 return peer
             },
-
-
-
-            // loadAudio(url) {
-            //     fetch(url)
-            //     .then(response => response.arrayBuffer())
-            //     .then(arrayBuffer => this.audioContext.decodeAudioData(arrayBuffer))
-            //     .then(audioBuffer => {
-            //         this.buffers.audio.push(audioBuffer)
-            //     })
-            // },
-
-            // playAudio(index) {
-            //     console.log(index)
-            //     let source = this.audioContext.createBufferSource()
-            //     source.buffer = this.buffers.audio[index]
-            //     source.connect(this.audioOutput)
-            //     source.start()
-            //     console.log(source)
-            // },
         },
 
         components: {
             SplashCreateRoom,
             SplashJoinRoom,
             ControlPanel,
+            OverlayPanel,
         }
     }
 </script>

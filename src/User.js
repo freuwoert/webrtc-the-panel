@@ -14,6 +14,7 @@ module.exports = class User
             level: 0,
             isMuted: false,
             freq: null,
+            track: null,
             audioContext: null,
             audioSource: null,
             audioAnalyzer: null,
@@ -22,6 +23,7 @@ module.exports = class User
         }
         this.video = {
             stream: null,
+            track: null,
         }
         this.peer = null
     }

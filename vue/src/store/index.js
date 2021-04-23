@@ -27,7 +27,12 @@ export default new Vuex.Store({
         },
 
         view: 'create-room',
+        url: {
+            roomId: null,
+            overlayId: null,
+        },
         overlays: [],
+        lobby: null, // Lobby is a pre-room without a "selfUser"
         room: null,
     },
 
@@ -52,6 +57,14 @@ export default new Vuex.Store({
 
         room(state) {
             return state.room
+        },
+
+        lobby(state) {
+            return state.lobby
+        },
+
+        url(state) {
+            return state.url
         },
 
         overlays(state) {
@@ -223,8 +236,16 @@ export default new Vuex.Store({
             state.view = data
         },
 
+        lobby(state, data) {
+            state.lobby = data
+        },
+
         room(state, data) {
             state.room = data
+        },
+
+        url(state, data) {
+            Vue.set(state, 'url', {...state.url, ...data})
         },
 
 

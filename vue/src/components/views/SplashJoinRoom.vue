@@ -3,8 +3,8 @@
         <div class="content">
             <div class="centered">
                 <h1>Join Room</h1>
-                <input type="text" v-model="roomJoin.name" placeholder="Your Name">
-                <button v-on:click="joinRoomAs(roomJoin.roomId, roomJoin.name)">Join Room</button>
+                <input type="text" v-model="name" placeholder="Your Name">
+                <button v-on:click="joinRoomAs(lobby.id, name)">Join Room</button>
             </div>
         </div>
         <div class="background"></div>
@@ -15,26 +15,17 @@
     export default {
         data() {
             return {
-                roomJoin: {
-                    roomId: null,
-                    name: '',
-                },
+                name: '',
             }
-        },
-
-        created() {
-            this.socket.on('server.checked.room-id', data => {
-                if (data.roomExists)
-                {
-                    this.roomJoin.roomId = data.room.id
-                    this.$store.commit('view', 'join-room')
-                }
-            })
         },
 
         computed: {
             overlays() {
                 return this.$store.getters.overlays
+            },
+
+            lobby() {
+                return this.$store.getters.lobby
             },
 
             socket() {
@@ -44,7 +35,6 @@
 
         methods: {
             joinRoomAs(id, name) {
-
                 this.socket.emit('join.room', {
                     id,
                     name,
