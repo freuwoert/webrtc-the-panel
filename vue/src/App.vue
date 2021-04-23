@@ -181,7 +181,12 @@
             checkUrlParameters(url) {
                 if (this.url.overlayId)
                 {
-                    console.log(this.url.overlayId)
+                    // console.log(this.url.overlayId)
+                    this.$store.commit('view', 'overlay')
+
+                    this.socket.emit('overlay.signin', {
+                        id: this.url.overlayId
+                    })
                 }
                 else if (this.url.roomId)
                 {
@@ -195,8 +200,8 @@
                     .then(res => res.json())
                     .then(data => {
                         if (!data) return
-                        this.$store.commit('view', 'join-room')
                         this.$store.commit('lobby', data)
+                        this.$store.commit('view', 'join-room')
                     })
                 }
             },

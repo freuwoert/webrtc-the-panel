@@ -10,6 +10,7 @@ module.exports = class Server {
     constructor(port) {
         this.overlayDict = new Map
         this.roomDict = new Map
+        this.overlayClients = {}
         this.port = port
         this.overlayDict.set('test_overlay_id_1', null)
         this.overlayDict.set('test_overlay_id_2', null)
@@ -63,6 +64,10 @@ module.exports = class Server {
 
     handleSocketConnection() {
         this.io.on('connection', socket => {
+            socket.on('overlay.signin', data => {
+                this.overlayClients[socket.id] = data.id
+            })
+
             socket.on('create.room', data => {
                 let room = new Room()
                 let user = new User(socket.id, data.name)
