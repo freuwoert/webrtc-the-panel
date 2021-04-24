@@ -66,6 +66,12 @@ module.exports = class Server {
         this.io.on('connection', socket => {
             socket.on('overlay.signin', data => {
                 this.overlayClients[socket.id] = data.id
+
+                let roomId = this.overlayDict.get(data.id)
+                
+                if (!roomId) return
+
+                this.joinRoom(socket, roomId, 'OVERLAY', true)
             })
 
             socket.on('create.room', data => {
@@ -83,26 +89,27 @@ module.exports = class Server {
 
                 socket.join(room.id)
 
-                socket.emit('room.self.joined', {
+                socket.emit('room.joined', {
                     room: {...room, users: Array.from(room.users.values())},
                 })
             })
 
-            socket.on('join.room', data => {
-                let room = this.roomDict.get(data.id)
-                let user = new User(socket.id, data.name)
+            socket.on('room.join', data => {
+                this.joinRoom(socket, data.id, data.name, false)
+                // let room = this.roomDict.get(data.id)
+                // let user = new User(socket.id, data.name)
 
-                room.users.set(socket.id, user)
+                // room.users.set(socket.id, user)
 
-                socket.join(room.id)
+                // socket.join(room.id)
 
-                socket.emit('room.self.joined', {
-                    room: {...room, users: Array.from(room.users.values())},
-                })
+                // socket.emit('room.joined', {
+                //     room: {...room, users: Array.from(room.users.values())},
+                // })
 
-                socket.broadcast.to(room.id).emit('room.user.joined', {
-                    user
-                })
+                // socket.broadcast.to(room.id).emit('room.user.joined', {
+                //     user
+                // })
             })
 
             socket.on('room.user.set-volume', data => {
@@ -161,15 +168,15 @@ module.exports = class Server {
             
 
 
-            socket.on('join-request-offer', data => {
-                socket.to(data.to).emit('join-request-offer', {
+            socket.on('peer.send.offer', data => {
+                socket.to(data.to).emit('peer.get.offer', {
                     offer: data.offer,
                     from: socket.id,
                 })
             })
 
-            socket.on('join-request-answer', data => {
-                socket.to(data.to).emit('join-request-answer', {
+            socket.on('peer.send.answer', data => {
+                socket.to(data.to).emit('peer.get.answer', {
                     answer: data.answer,
                     from: socket.id,
                 })
@@ -200,15 +207,19 @@ module.exports = class Server {
                     // Remove room if empty
                     if (room.users.size == 0)
                     {
-                        let overlayDict = Array.from(this.overlayDict.entries())
-                        
-                        // returns array with exactly one entry containing an array with two entries
-                        // (key and value from the original map)
-                        let currentOverlayIdFromRoom = overlayDict.filter(e => e[1] === room.id)[0][0]
-                        
-                        this.overlayDict.set(currentOverlayIdFromRoom, null)
-
-                        this.roomDict.delete(room.id)
+                        try {
+                            let overlayDict = Array.from(this.overlayDict.entries())
+                            
+                            // returns array with exactly one entry containing an array with two entries
+                            // (key and value from the original map)
+                            let currentOverlayIdFromRoom = overlayDict.filter(e => e[1] === room.id)[0][0]
+                            
+                            this.overlayDict.set(currentOverlayIdFromRoom, null)
+    
+                            this.roomDict.delete(room.id)
+                        } catch (error) {
+                            
+                        }
                     }
                 }
             })
@@ -223,6 +234,23 @@ module.exports = class Server {
         roomIds.shift()
 
         return roomIds
+    }
+
+    joinRoom(socket, roomId, name, isOverlay = false) {
+        let room = this.roomDict.get(roomId)
+        let user = new User(socket.id, name, isOverlay)
+
+        room.users.set(socket.id, user)
+
+        socket.join(roomId)
+
+        socket.emit('room.joined', {
+            room: {...room, users: Array.from(room.users.values())},
+        })
+
+        socket.broadcast.to(roomId).emit('room.user.joined', {
+            user
+        })
     }
 
     configureApp() {

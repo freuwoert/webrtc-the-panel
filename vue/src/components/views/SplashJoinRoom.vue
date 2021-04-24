@@ -35,7 +35,7 @@
 
         methods: {
             joinRoomAs(id, name) {
-                this.socket.emit('join.room', {
+                this.socket.emit('room.join', {
                     id,
                     name,
                 })

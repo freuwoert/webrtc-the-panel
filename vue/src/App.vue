@@ -2,8 +2,8 @@
     <div id="app">
         <splash-create-room v-show="view === 'create-room'"></splash-create-room>
         <splash-join-room v-show="view === 'join-room'"></splash-join-room>
-        <control-panel v-show="view === 'room'" v-if="room"></control-panel>
-        <overlay-panel v-show="view === 'overlay'" v-if="room"></overlay-panel>
+        <control-panel v-if="room && view === 'room'"></control-panel>
+        <overlay-panel v-if="room && view === 'overlay'"></overlay-panel>
     </div>
 </template>
 
@@ -16,19 +16,6 @@
     import OverlayPanel from './components/views/OverlayPanel.vue'
 
     export default {
-        name: 'App',
-
-        data() {
-            return {
-                peerConnectionConfig: {
-                    'iceServers': [
-                        {'urls': 'stun:stun.stunprotocol.org:3478'},
-                        {'urls': 'stun:stun.l.google.com:19302'},
-                    ],
-                },
-            }
-        },
-
         async created() {
             fetch('/overlay/get-available-keys', {
                 method: 'POST',
@@ -45,29 +32,31 @@
 
             this.checkUrlParameters()
 
-            this.socket.on('room.user.joined', async (data) => {
-                this.$store.commit('addUser', data.user)
-            })
-
-            this.socket.on('room.self.joined', async (data) => {
+            this.socket.on('room.joined', async (data) => {
                 let users = []
+                let self = null
 
                 for (let user of data.room.users)
                 {
                     if(user.id === this.socket.id)
                     {
                         user.isSelf = true
+                        self = user
                     }
                     
                     users.push(user)
                 }
                 
-                this.$store.commit('view', 'room')
                 this.$store.commit('room', {...data.room, users: users})
 
-                await this.$store.dispatch('setUserMediaInput', {
-                    requestAudio: true,
-                })
+                if (!self.isOverlay)
+                {
+                    this.$store.commit('view', 'room')
+
+                    await this.$store.dispatch('setUserMediaInput', {
+                        requestAudio: true,
+                    })
+                }
 
                 for (const user of this.room.users)
                 {
@@ -76,6 +65,10 @@
                         this.connectToPeer(user.id)
                     }
                 }
+            })
+
+            this.socket.on('room.user.joined', async (data) => {
+                this.$store.commit('addUser', data.user)
             })
 
             this.socket.on('room.user.left', data => {
@@ -113,20 +106,20 @@
                 })
             })
 
-            this.socket.on('join-request-offer', async data => {
+            this.socket.on('peer.get.offer', async data => {
                 let peer = await this.getOrCreatePeer(data.from)
 
                 await peer.connection.setRemoteDescription(new RTCSessionDescription(data.offer))
                 const answer = await peer.connection.createAnswer()
                 await peer.connection.setLocalDescription(new RTCSessionDescription(answer))
                 
-                this.socket.emit('join-request-answer', {
+                this.socket.emit('peer.send.answer', {
                     answer,
                     to: data.from
                 })
             })
 
-            this.socket.on("join-request-answer", async data => {
+            this.socket.on("peer.get.answer", async data => {
                 let peer = this.getPeerOrNull(data.from)
 
                 if (!peer) return
@@ -181,7 +174,6 @@
             checkUrlParameters(url) {
                 if (this.url.overlayId)
                 {
-                    // console.log(this.url.overlayId)
                     this.$store.commit('view', 'overlay')
 
                     this.socket.emit('overlay.signin', {
@@ -212,7 +204,7 @@
                 let offer = await peer.connection.createOffer()
                 await peer.connection.setLocalDescription(new RTCSessionDescription(offer))
 
-                this.socket.emit('join-request-offer', {
+                this.socket.emit('peer.send.offer', {
                     offer,
                     to: id
                 })
@@ -249,16 +241,21 @@
                     id: id,
                     videoTrack: null,
                     audioTrack: null,
-                    connection: new RTCPeerConnection(this.peerConnectionConfig),
+                    connection: new RTCPeerConnection({
+                        'iceServers': [
+                            {'urls': 'stun:stun.stunprotocol.org:3478'},
+                            {'urls': 'stun:stun.l.google.com:19302'},
+                        ],
+                    }),
                 }
 
 
+
+                let selfUser = () => {
+                    return this.room.users.find(e => e.id === id)
+                }
                 
                 peer.connection.ontrack = (e) => {
-                    let selfUser = () => {
-                        return this.room.users.find(e => e.id === id)
-                    }
-
                     this.$store.commit('setUserAudio', {id, data: {audioSource: selfUser().audio.audioContext.createMediaStreamSource(e.streams[0])}})
                     this.$store.commit('setUserAudio', {id, data: {audioAnalyzer: selfUser().audio.audioContext.createAnalyser()}})
                     this.$store.commit('setUserAudio', {id, data: {audioGainNode: selfUser().audio.audioContext.createGain()}})
@@ -273,8 +270,6 @@
                     selfUser().audio.audioAnalyzer.minDecibels = -56
         
                     selfUser().audio.audioGainNode.gain.setValueAtTime(1, selfUser().audio.audioContext.currentTime)
-
-
 
                     this.$store.commit('setUserAudioStream', {id, data: selfUser().audio.audioDestination.stream})
                     this.$store.commit('setUserVideoStream', {id, data: e.streams[0]})
@@ -340,7 +335,6 @@
         font-family: "Roboto", sans-serif
         -webkit-font-smoothing: antialiased
         -moz-osx-font-smoothing: grayscale
-        background: var(--bg-dark)
         color: var(--text-color)
 
     a,

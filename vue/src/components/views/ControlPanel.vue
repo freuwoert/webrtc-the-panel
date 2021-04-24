@@ -64,6 +64,7 @@
         grid-template-areas: "app-bar" "content"
         padding: 3px
         gap: 3px
+        background: var(--bg-dark)
 
     .app-bar
         grid-area: app-bar
